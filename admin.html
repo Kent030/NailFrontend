@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>美甲工作室 - 老闆管理後台</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f4f6f9; }
+        .admin-card { margin-top: 50px; padding: 30px; background: white; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+    </style>
+</head>
+<body>
+
+<div class="container" id="mainContent" style="display: none;">
+    <div class="admin-card">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 style="color: #495057;">📊 老闆專屬管理後台</h2>
+            <button class="btn btn-outline-primary fw-bold" id="refreshBtn">🔄 刷新預約名單</button>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>訂單編號</th>
+                        <th>顧客姓名</th>
+                        <th>聯絡電話</th>
+                        <th>服務項目</th>
+                        <th>預約時段 (開始 ~ 結束)</th>
+                        <th>管理操作</th>
+                    </tr>
+                </thead>
+                <tbody id="bookingTableBody">
+                </tbody>
+            </table>
+        </div>
+
+        <div id="noDataMessage" class="text-center text-muted my-4 d-none">
+            <h5>目前沒有任何預約紀錄喔！</h5>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ==========================================
+    // ★ 雲端後端大腦網址與密碼設定
+    // ==========================================
+    const API_URL = "https://nail-booking-api-bx93.onrender.com";
+    const SECRET_PASSWORD = "boss"; // 👈 你的專屬密碼
+
+    // 網頁一打開，立刻要求輸入密碼
+    const userInput = prompt("🔒 系統已鎖定，請輸入老闆專屬密碼：");
+
+    if (userInput === SECRET_PASSWORD) {
+        document.getElementById('mainContent').style.display = 'block';
+        fetchAllBookings();
+    } else {
+        alert("❌ 密碼錯誤！您沒有權限訪問此頁面。");
+        document.body.innerHTML = "<div class='container mt-5 text-center'><h2 class='text-danger'>🔒 存取遭拒</h2><p>請重新整理網頁並輸入正確密碼。</p></div>";
+    }
+
+    // ==========================================
+    // 1. 抓取預約資料邏輯 (GET)
+    // ==========================================
+    document.getElementById('refreshBtn').addEventListener('click', fetchAllBookings);
+
+    async function fetchAllBookings() {
+        const tableBody = document.getElementById('bookingTableBody');
+        const noDataMessage = document.getElementById('noDataMessage');
+        
+        tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-secondary">資料載入中...</td></tr>`;
+
+        try {
+            // 這裡已經改成去雲端抓資料了！
+            const response = await fetch(`${API_URL}/bookings`);
+            const data = await response.json();
+
+            if (response.ok) {
+                if (data.length === 0) {
+                    tableBody.innerHTML = '';
+                    noDataMessage.classList.remove('d-none'); 
+                    return;
+                }
+
+                noDataMessage.classList.add('d-none'); 
+                let html = '';
+                
+                data.sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
+
+                data.forEach(booking => {
+                    const startTime = booking.start_time.replace('T', ' ');
+                    const endTime = booking.end_time.replace('T', ' ').slice(11); 
+                    
+                    html += `
+                        <tr>
+                            <td><span class="badge bg-secondary"># ${booking.id}</span></td>
+                            <td class="fw-bold">${booking.user_name}</td>
+                            <td>${booking.user_phone}</td>
+                            <td><span class="badge bg-info text-dark">${booking.service_name}</span></td>
+                            <td><span class="text-primary">${startTime}</span> ~ ${endTime}</td>
+                            <td>
+                                <button class="btn btn-sm btn-danger fw-bold" onclick="adminCancelBooking(${booking.id}, '${booking.user_name}')">
+                                    🗑️ 強制取消
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                tableBody.innerHTML = html;
+            } else {
+                tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">❌ 無法抓取資料：${data.detail}</td></tr>`;
+            }
+        } catch (error) {
+            tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">❌ 連線失敗！請確認雲端伺服器是否正常運作。</td></tr>`;
+        }
+    }
+
+    // ==========================================
+    // 2. 老闆專用的強制取消功能 (DELETE)
+    // ==========================================
+    async function adminCancelBooking(bookingId, userName) {
+        if (!confirm(`【管理員警告】確定要強制取消顧客「${userName}」的這筆預約嗎？`)) {
+            return;
+        }
+
+        try {
+            // 這裡也改成傳送指令到雲端！
+            const response = await fetch(`${API_URL}/bookings/${bookingId}`, {
+                method: 'DELETE'
+            });
+            const result = await response.json();
+
+            if (response.ok) {
+                alert("管理員操作成功：" + result.message);
+                fetchAllBookings(); 
+            } else {
+                alert("❌ 取消失敗：" + result.detail);
+            }
+        } catch (error) {
+            alert("❌ 連線失敗！無法連上雲端伺服器。");
+        }
+    }
+</script>
+
+</body>
+</html>

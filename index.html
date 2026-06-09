@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>單人美甲工作室 - 預約系統</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #fcf4f4; }
+        .booking-card { max-width: 500px; margin: 50px auto; padding: 30px; background: white; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="booking-card">
+        <h2 class="text-center mb-4" style="color: #d68080;">✨ 預約美甲服務 ✨</h2>
+        
+        <form id="bookingForm">
+            <div class="mb-3">
+                <label class="form-label">您的姓名</label>
+                <input type="text" class="form-control" id="userName" required placeholder="例如：王小明">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">聯絡電話</label>
+                <input type="tel" class="form-control" id="userPhone" required placeholder="例如：0912345678">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">服務項目</label>
+                <select class="form-select" id="serviceName">
+                    <option value="單色凝膠">單色凝膠 (90分鐘)</option>
+                    <option value="造型凝膠">造型凝膠 (120分鐘)</option>
+                    <option value="卸甲續作">卸甲續作 (150分鐘)</option>
+                    <option value="純卸甲">純卸甲 (40分鐘)</option>
+                </select>
+            </div>
+            
+            <div class="mb-4">
+                <label class="form-label">預約時間</label>
+                <div class="row g-2">
+                    <div class="col-6">
+                        <input type="date" class="form-control" id="bookingDate" required>
+                    </div>
+                    <div class="col-3">
+                        <select class="form-select" id="bookingHour" required></select>
+                    </div>
+                    <div class="col-3">
+                        <select class="form-select" id="bookingMinute" required></select>
+                    </div>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn w-100" style="background-color: #d68080; color: white; font-weight: bold;">送出預約</button>
+        </form>
+
+        <div id="messageBox" class="mt-3 text-center fw-bold"></div>
+    </div>
+
+    <div class="booking-card mt-4">
+        <h3 class="text-center mb-3" style="color: #6c757d;">🔍 查詢我的預約</h3>
+        <div class="row g-2 mb-3">
+            <div class="col-5">
+                <input type="text" class="form-control" id="searchName" placeholder="您的姓名">
+            </div>
+            <div class="col-5">
+                <input type="tel" class="form-control" id="searchPhone" placeholder="聯絡電話">
+            </div>
+            <div class="col-2">
+                <button class="btn btn-outline-secondary w-100" type="button" id="searchBtn">查詢</button>
+            </div>
+        </div>
+        <div id="searchResults" class="mt-3"></div>
+    </div>
+
+</div>
+
+<script>
+    // 雲端後端大腦網址變數
+    const API_URL = "https://nail-booking-api-bx93.onrender.com";
+
+    // ==========================================
+    // 1. 初始化日曆與時間選單
+    // ==========================================
+    const dateInput = document.getElementById('bookingDate');
+    const today = new Date();
+    today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
+    dateInput.min = today.toISOString().split('T')[0];
+
+    const hourSelect = document.getElementById('bookingHour');
+    for (let h = 0; h < 24; h++) {
+        let hourStr = h.toString().padStart(2, '0');
+        let option = document.createElement('option');
+        option.value = hourStr;
+        option.text = hourStr + ' 時';
+        hourSelect.appendChild(option);
+    }
+
+    const minuteSelect = document.getElementById('bookingMinute');
+    for (let m = 0; m < 60; m += 5) {
+        let minuteStr = m.toString().padStart(2, '0');
+        let option = document.createElement('option');
+        option.value = minuteStr;
+        option.text = minuteStr + ' 分';
+        minuteSelect.appendChild(option);
+    }
+
+    // ==========================================
+    // 2. 送出預約的邏輯 (POST)
+    // ==========================================
+    document.getElementById('bookingForm').addEventListener('submit', async function(event) {
+        event.preventDefault(); 
+        
+        const selectedDate = document.getElementById('bookingDate').value;
+        const selectedHour = document.getElementById('bookingHour').value;
+        const selectedMinute = document.getElementById('bookingMinute').value;
+        const combinedDateTime = `${selectedDate}T${selectedHour}:${selectedMinute}:00`;
+
+        const bookingData = {
+            user_name: document.getElementById('userName').value,
+            user_phone: document.getElementById('userPhone').value,
+            service_name: document.getElementById('serviceName').value,
+            start_time: combinedDateTime
+        };
+
+        const messageBox = document.getElementById('messageBox');
+        messageBox.innerHTML = "<span class='text-secondary'>處理中，請稍候...</span>";
+
+        try {
+            const response = await fetch(`${API_URL}/bookings`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(bookingData)
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                messageBox.innerHTML = `<span class="text-success">✅ ${result.message}<br>預計結束時間：${result.auto_end_time}</span>`;
+                document.getElementById('bookingForm').reset(); 
+            } else {
+                messageBox.innerHTML = `<span class="text-danger">❌ ${result.detail}</span>`;
+            }
+        } catch (error) {
+            messageBox.innerHTML = `<span class="text-danger">❌ 連線失敗！請確認雲端伺服器是否正常運作。</span>`;
+        }
+    });
+
+    // ==========================================
+    // 3. 查詢預約的邏輯 (GET)
+    // ==========================================
+    document.getElementById('searchBtn').addEventListener('click', async function() {
+        const name = document.getElementById('searchName').value;
+        const phone = document.getElementById('searchPhone').value;
+        const resultsDiv = document.getElementById('searchResults');
+        
+        if (!name || !phone) {
+            resultsDiv.innerHTML = `<span class="text-danger">請輸入完整的「姓名」與「電話」喔！</span>`;
+            return;
+        }
+
+        resultsDiv.innerHTML = "<span class='text-secondary'>查詢中...</span>";
+
+        try {
+            const response = await fetch(`${API_URL}/bookings/search?name=${name}&phone=${phone}`);
+            const data = await response.json();
+
+            if (response.ok) {
+                let html = '<div class="list-group">';
+                data.forEach(booking => {
+                    const startTime = booking.start_time.replace('T', ' '); 
+                    html += `
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1 text-primary">${booking.service_name}</h6>
+                                <p class="mb-1 text-muted">🕒 時間：${startTime}</p>
+                                <small class="text-muted">預約人：${booking.user_name}</small>
+                            </div>
+                            <button class="btn btn-sm btn-outline-danger" onclick="cancelBooking(${booking.id})">取消預約</button>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                resultsDiv.innerHTML = html;
+            } else {
+                resultsDiv.innerHTML = `<span class="text-danger">❌ ${data.detail}</span>`;
+            }
+        } catch (error) {
+            resultsDiv.innerHTML = `<span class="text-danger">❌ 連線失敗！請確認雲端伺服器是否正常運作。</span>`;
+        }
+    });
+
+    // ==========================================
+    // 4. 執行「取消預約」的邏輯 (DELETE)
+    // ==========================================
+    async function cancelBooking(bookingId) {
+        if (!confirm("確定要取消這筆預約嗎？取消後無法恢復喔！")) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_URL}/bookings/${bookingId}`, {
+                method: 'DELETE'
+            });
+            const result = await response.json();
+
+            if (response.ok) {
+                alert("✅ " + result.message);
+                document.getElementById('searchBtn').click(); // 重新整理查詢清單
+            } else {
+                alert("❌ 取消失敗：" + result.detail);
+            }
+        } catch (error) {
+            alert("❌ 連線失敗！無法連上雲端伺服器。");
+        }
+    }
+</script>
+
+</body>
+</html>
