@@ -6,12 +6,13 @@
     <title>單人美甲工作室 - 預約系統</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
     
     <style>
-        body { background-color: #F5EEF0; color: #5C4E54; font-family: 'Helvetica Neue', '微軟正黑體', Arial, sans-serif; }
-        .container { max-width: 600px; }
-        .booking-card { background: #FFFFFF; border: none; border-radius: 20px; box-shadow: 0 8px 24px rgba(174, 139, 150, 0.15); padding: 30px; margin-top: 40px; margin-bottom: 40px; }
-        h1, h2, h3 { color: #AE8B96; font-weight: bold; text-align: center; margin-bottom: 25px; }
+        body { background-color: #F5EEF0; color: #5C4E54; font-family: 'Helvetica Neue', '微軟正黑體', Arial, sans-serif; padding: 20px 10px; }
+        .container-fluid { max-width: 1250px; }
+        .booking-card { background: #FFFFFF; border: none; border-radius: 20px; box-shadow: 0 8px 24px rgba(174, 139, 150, 0.15); padding: 25px; margin-bottom: 25px; }
+        h2, h3 { color: #AE8B96; font-weight: bold; text-align: center; margin-bottom: 20px; }
         .form-control, .form-select { border: 1px solid #E0D4D8; border-radius: 12px; padding: 12px; background-color: #FCFAFB; color: #5C4E54; }
         .form-control:focus, .form-select:focus { border-color: #C2A3AC; box-shadow: 0 0 0 0.25rem rgba(194, 163, 172, 0.25); }
         .form-label { font-weight: 600; color: #8A737A; margin-bottom: 8px; }
@@ -19,74 +20,107 @@
         .btn-primary:hover { background-color: #B08E98 !important; transform: translateY(-2px); box-shadow: 0 6px 15px rgba(176, 142, 152, 0.4); }
         .btn-outline-secondary { border-radius: 12px; border-color: #C2A3AC; color: #C2A3AC; font-weight: bold; }
         .btn-outline-secondary:hover { background-color: #C2A3AC; color: white; }
+
+        /* 客人端行事曆粉嫩色調優化 */
+        :root {
+            --fc-border-color: #EEDEE2;
+            --fc-button-bg-color: #C2A3AC;
+            --fc-button-border-color: #C2A3AC;
+            --fc-button-hover-bg-color: #B08E98;
+            --fc-button-active-bg-color: #B08E98;
+            --fc-today-bg-color: #FCFAFB;
+        }
+        #customerCalendar { background: white; padding: 10px; border-radius: 15px; min-height: 500px; }
+        .fc-header-toolbar h2 { font-size: 1.3rem !important; color: #8A737A !important; }
+        .fc-event-title { font-weight: bold; }
+        .fc-v-event { border-radius: 6px; padding: 3px; border: none !important; }
+        .calendar-hint { font-size: 0.85rem; margin-bottom: 10px; text-align: left; color: #8A737A; }
+        .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="booking-card">
-        <h2>✨ 預約美甲服務 ✨</h2>
-        <form id="bookingForm">
-            <div class="mb-3">
-                <label class="form-label">您的姓名</label>
-                <input type="text" class="form-control" id="userName" required placeholder="例如：王小明">
-            </div>
-            <div class="mb-3">
-                <label class="form-label">聯絡電話</label>
-                <input type="tel" class="form-control" id="userPhone" required placeholder="例如：0912345678">
-            </div>
-            <div class="mb-3">
-                <label class="form-label">服務項目</label>
-                <select class="form-select" id="serviceName">
-                    <option value="單色凝膠">單色凝膠 (90分鐘)</option>
-                    <option value="造型凝膠">造型凝膠 (120分鐘)</option>
-                    <option value="卸甲續作">卸甲續作 (150分鐘)</option>
-                    <option value="純卸甲">純卸甲 (40分鐘)</option>
-                </select>
-            </div>
-            <div class="mb-4">
-                <label class="form-label">預約時間</label>
-                <div class="row g-2">
-                    <div class="col-6">
-                        <input type="date" class="form-control" id="bookingDate" required>
-                    </div>
-                    <div class="col-3">
-                        <select class="form-select" id="bookingHour" required>
-                            <option value="" disabled selected>時</option>
-                        </select>
-                    </div>
-                    <div class="col-3">
-                        <select class="form-select" id="bookingMinute" required>
-                            <option value="" disabled selected>分</option>
-                        </select>
-                    </div>
+<div class="container-fluid">
+    <div class="row g-4">
+        <div class="col-lg-7 col-12">
+            <div class="booking-card h-100">
+                <h3>📅 本月預約狀態看板</h3>
+                <div class="calendar-hint">
+                    <span class="dot" style="background-color: #D6C5C9;"></span> 🚫 已被預約 (保護隱私)
+                    <span class="dot" style="background-color: #7A7A7A;"></span> 🔒 店休 / 老闆行程
+                    <br><small class="text-muted">💡 密技：直接在行事曆上點擊你想預約的「日期」，右側表格就會自動幫你填好日期喔！</small>
                 </div>
-            </div>
-            <button type="submit" class="btn btn-primary">送出預約</button>
-        </form>
-    </div>
-
-    <div class="booking-card mt-4">
-        <h3>🔍 查詢我的預約</h3>
-        <div class="row g-2 mb-3">
-            <div class="col-5">
-                <input type="text" class="form-control" id="searchName" placeholder="您的姓名">
-            </div>
-            <div class="col-5">
-                <input type="tel" class="form-control" id="searchPhone" placeholder="聯絡電話">
-            </div>
-            <div class="col-2">
-                <button class="btn btn-outline-secondary w-100" type="button" id="searchBtn">查詢</button>
+                <div id="customerCalendar"></div>
             </div>
         </div>
-        <div id="searchResults" class="mt-3"></div>
+
+        <div class="col-lg-5 col-12">
+            <div class="booking-card">
+                <h2>✨ 線上快速預約 ✨</h2>
+                <form id="bookingForm">
+                    <div class="mb-3">
+                        <label class="form-label">您的姓名</label>
+                        <input type="text" class="form-control" id="userName" required placeholder="例如：王小明">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">聯絡電話</label>
+                        <input type="tel" class="form-control" id="userPhone" required placeholder="例如：0912345678">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">服務項目</label>
+                        <select class="form-select" id="serviceName">
+                            <option value="單色凝膠">單色凝膠 (90分鐘)</option>
+                            <option value="造型凝膠">造型凝膠 (120分鐘)</option>
+                            <option value="卸甲續作">卸甲續作 (150分鐘)</option>
+                            <option value="純卸甲">純卸甲 (40分鐘)</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label">預約時間</label>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <input type="date" class="form-control" id="bookingDate" required>
+                            </div>
+                            <div class="col-3">
+                                <select class="form-select" id="bookingHour" required>
+                                    <option value="" disabled selected>時</option>
+                                </select>
+                            </div>
+                            <div class="col-3">
+                                <select class="form-select" id="bookingMinute" required>
+                                    <option value="" disabled selected>分</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">送出預約</button>
+                </form>
+            </div>
+
+            <div class="booking-card">
+                <h3>🔍 查詢我的預約</h3>
+                <div class="row g-2 mb-3">
+                    <div class="col-5">
+                        <input type="text" class="form-control" id="searchName" placeholder="您的姓名">
+                    </div>
+                    <div class="col-5">
+                        <input type="tel" class="form-control" id="searchPhone" placeholder="聯絡電話">
+                    </div>
+                    <div class="col-2">
+                        <button class="btn btn-outline-secondary w-100 px-0" type="button" id="searchBtn">查詢</button>
+                    </div>
+                </div>
+                <div id="searchResults" class="mt-3"></div>
+            </div>
+        </div>
     </div>
 </div>
 
 <script>
     const API_URL = "https://nail-booking-api-bx93.onrender.com";
+    let calendar;
 
-    // 1. 動態產生時間 (8點~23點，每5分鐘)
+    // 1. 初始化與時間選項動態產生
     document.addEventListener("DOMContentLoaded", function() {
         const hourSelect = document.getElementById("bookingHour");
         for(let i = 8; i <= 23; i++){
@@ -97,9 +131,12 @@
             let m = i.toString().padStart(2, '0');
             minSelect.innerHTML += `<option value="${m}">${m}</option>`;
         }
+
+        // 初始化客人的專屬行事曆
+        initCustomerCalendar();
     });
 
-    // 2. 日期防呆
+    // 2. 日期防呆限制
     const dateInput = document.getElementById('bookingDate');
     if(dateInput) {
         const today = new Date();
@@ -107,7 +144,85 @@
         dateInput.setAttribute('min', today.toISOString().split('T')[0]);
     }
 
-    // 3. 送出預約
+    // 3. 建立客人端唯讀行事曆
+    function initCustomerCalendar() {
+        const calendarEl = document.getElementById('customerCalendar');
+        calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            locale: 'zh-tw',
+            headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek' },
+            buttonText: { today: '今天', month: '月', week: '週' },
+            height: 'auto',
+            
+            // ✨ 貼心小功能：客人點擊行事曆日期，右側表單自動填寫該日期！
+            dateClick: function(info) {
+                let clickedDate = info.dateStr.split("T")[0];
+                const todayStr = new Date().toISOString().split('T')[0];
+                if (clickedDate >= todayStr) {
+                    document.getElementById("bookingDate").value = clickedDate;
+                }
+            },
+            
+            // 客人點擊已被佔用的行程時，跳窗提示
+            eventClick: function(info) {
+                Swal.fire({
+                    title: info.event.title,
+                    text: info.event.allDay ? "這天老闆排定整天休息不營業喔！" : "此時段目前已被其他客人預約，請選擇其他空檔！",
+                    icon: 'info',
+                    confirmButtonColor: '#C2A3AC'
+                });
+            },
+            events: fetchCustomerEvents
+        });
+        calendar.render();
+    }
+
+    // 4. 抓取資料並進行隱私遮罩
+    async function fetchCustomerEvents(fetchInfo, successCallback, failureCallback) {
+        try {
+            const response = await fetch(`${API_URL}/bookings/`);
+            const data = await response.json();
+            
+            const events = data.map(b => {
+                const timeString = b.start_time || b.booking_time;
+                const nameString = b.user_name || b.customer_name || "";
+                if (!timeString) return null;
+
+                let startTime = new Date(timeString);
+                let endTime = new Date(startTime.getTime() + 2 * 60 * 60 * 1000); 
+                
+                const isBoss = nameString.includes("🔒") || nameString.includes("休息");
+                const isAllDay = nameString.includes("整天休息");
+
+                let displayTitle = "";
+                let eventColor = "";
+
+                if (isBoss) {
+                    // 💡 老闆行程：大方顯示公休原因
+                    displayTitle = nameString.replace("🔒 整天休息: ", "🔒 ").replace("🔒 休息: ", "🔒 ");
+                    eventColor = '#7A7A7A'; // 老闆灰
+                } else {
+                    // 💡 客人行程：啟動隱私保護機制，抹除姓名電話！
+                    displayTitle = "🚫 已被預約";
+                    eventColor = '#D6C5C9'; // 淡淡的莫蘭迪遮罩粉灰
+                }
+                
+                return {
+                    title: displayTitle,
+                    start: timeString,
+                    end: isAllDay ? null : endTime.toISOString(),
+                    allDay: isAllDay,
+                    color: eventColor,
+                    editable: false // 客人端唯讀，不可拖拽
+                };
+            }).filter(e => e !== null);
+            successCallback(events);
+        } catch (error) {
+            failureCallback(error);
+        }
+    }
+
+    // 5. 送出預約功能 (含時區校正店休防呆)
     document.getElementById("bookingForm").addEventListener("submit", async function(e) {
         e.preventDefault();
         const date = document.getElementById("bookingDate").value;
@@ -119,37 +234,27 @@
             return;
         }
 
-        // 🧠 ✨ 時區校正版智慧攔截機制
+        // 時區校正版智慧店休攔截
         try {
             const checkRes = await fetch(`${API_URL}/bookings/`);
             if (checkRes.ok) {
                 const allBookings = await checkRes.json();
-                
                 const isDayOff = allBookings.some(b => {
                     const name = b.user_name || b.customer_name || "";
                     const time = b.start_time || b.booking_time || "";
                     if (!time) return false;
 
-                    // 💡 將伺服器傳回的時間丟進 Date 物件，強制轉回客人的在地時間（解決時區倒退問題）
                     const d = new Date(time);
                     const localDateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                    
                     return name.includes("🔒 整天休息") && localDateStr === date;
                 });
 
                 if (isDayOff) {
-                    Swal.fire({
-                        title: '今天不營業喔！',
-                        text: '老闆這天排定整天休息／店休，無法接受預約。請換個日子試試看！',
-                        icon: 'info',
-                        confirmButtonColor: '#C2A3AC'
-                    });
+                    Swal.fire({ title: '今天不營業喔！', text: '老闆這天排定整天休息，請換個日子試試看！', icon: 'info', confirmButtonColor: '#C2A3AC' });
                     return; 
                 }
             }
-        } catch (err) {
-            console.log("檢查店休失敗，跳過驗證", err);
-        }
+        } catch (err) { console.log(err); }
 
         const payload = {
             user_name: document.getElementById("userName").value.trim(),
@@ -164,11 +269,14 @@
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
             });
-            const data = await response.json();
             if(response.ok) {
                 Swal.fire({ title: '預約成功！', text: '期待為您服務 💅', icon: 'success', confirmButtonColor: '#C2A3AC' })
-                .then(() => document.getElementById('bookingForm').reset());
+                .then(() => {
+                    document.getElementById('bookingForm').reset();
+                    calendar.refetchEvents(); // ✨ 自動重新整理左側行事曆！
+                });
             } else {
+                let data = await response.json();
                 let errorMessage = data.detail ? (typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail)) : "格式錯誤";
                 Swal.fire({ title: '預約失敗', text: `原因：${errorMessage}`, icon: 'error', confirmButtonColor: '#C2A3AC' });
             }
@@ -177,7 +285,7 @@
         }
     });
 
-    // 4. 前端資料篩選查詢功能
+    // 6. 前端篩選查詢與取消功能
     document.getElementById("searchBtn").addEventListener("click", async function() {
         const name = document.getElementById("searchName").value.trim();
         const phone = document.getElementById("searchPhone").value.trim();
@@ -247,6 +355,7 @@
                 if(res.ok) {
                     Swal.fire({ title: '已取消', text: '您的預約已經成功取消！', icon: 'success', confirmButtonColor: '#C2A3AC' });
                     document.getElementById("searchBtn").click(); 
+                    calendar.refetchEvents(); // ✨ 取消成功後，同時連動刷新行事曆！
                 } else {
                     Swal.fire({ title: '取消失敗', text: '請聯繫老闆人工處理。', icon: 'error', confirmButtonColor: '#C2A3AC' });
                 }
