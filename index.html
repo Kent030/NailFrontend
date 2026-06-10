@@ -69,11 +69,8 @@
     <div class="booking-card mt-4">
         <h3>🔍 查詢我的預約</h3>
         <div class="row g-2 mb-3">
-            <div class="col-5">
-                <input type="text" class="form-control" id="searchName" placeholder="您的姓名">
-            </div>
-            <div class="col-5">
-                <input type="tel" class="form-control" id="searchPhone" placeholder="聯絡電話">
+            <div class="col-10">
+                <input type="tel" class="form-control" id="searchPhone" placeholder="請輸入預約時的聯絡電話">
             </div>
             <div class="col-2">
                 <button class="btn btn-outline-secondary w-100" type="button" id="searchBtn">查詢</button>
@@ -86,17 +83,18 @@
 <script>
     const API_URL = "https://nail-booking-api-bx93.onrender.com";
 
-    // 1. 穩固初始化時間選項（從 8 點到 23 點，每 5 分鐘一跳）
-    const hourSelect = document.getElementById("bookingHour");
-    for(let i = 8; i <= 23; i++){
-        hourSelect.innerHTML += `<option value="${i.toString().padStart(2, '0')}">${i.toString().padStart(2, '0')}</option>`;
-    }
-
-    const minSelect = document.getElementById("bookingMinute");
-    for(let i = 0; i < 60; i += 5){
-        let m = i.toString().padStart(2, '0');
-        minSelect.innerHTML += `<option value="${m}">${m}</option>`;
-    }
+    // 1. 動態產生時間
+    document.addEventListener("DOMContentLoaded", function() {
+        const hourSelect = document.getElementById("bookingHour");
+        for(let i = 8; i <= 23; i++){
+            hourSelect.innerHTML += `<option value="${i.toString().padStart(2, '0')}">${i.toString().padStart(2, '0')}</option>`;
+        }
+        const minSelect = document.getElementById("bookingMinute");
+        for(let i = 0; i < 60; i += 5){
+            let m = i.toString().padStart(2, '0');
+            minSelect.innerHTML += `<option value="${m}">${m}</option>`;
+        }
+    });
 
     // 2. 日期防呆
     const dateInput = document.getElementById('bookingDate');
@@ -106,17 +104,14 @@
         dateInput.setAttribute('min', today.toISOString().split('T')[0]);
     }
 
-    // 3. 送出預約連線功能
+    // 3. 送出預約
     document.getElementById("bookingForm").addEventListener("submit", async function(e) {
         e.preventDefault();
-        
         const date = document.getElementById("bookingDate").value;
         const hour = document.getElementById("bookingHour").value;
         const minute = document.getElementById("bookingMinute").value;
         
-        const selectedTime = new Date(`${date}T${hour}:${minute}:00`);
-        const now = new Date();
-        if (selectedTime < now) {
+        if (new Date(`${date}T${hour}:${minute}:00`) < new Date()) {
             Swal.fire({ title: '哎呀！時光不能倒流', text: '您選擇的時間已經過去囉！', icon: 'warning', confirmButtonColor: '#C2A3AC' });
             return;
         }
@@ -134,63 +129,55 @@
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
             });
-            
             const data = await response.json();
-            
             if(response.ok) {
                 Swal.fire({ title: '預約成功！', text: '期待為您服務 💅', icon: 'success', confirmButtonColor: '#C2A3AC' })
                 .then(() => document.getElementById('bookingForm').reset());
             } else {
-                let errorMessage = "未知錯誤";
-                if (data.detail) {
-                    errorMessage = typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail);
-                }
-                Swal.fire({ title: '預約失敗', text: `退件原因：${errorMessage}`, icon: 'error', confirmButtonColor: '#C2A3AC' });
+                let errorMessage = data.detail ? (typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail)) : "格式錯誤";
+                Swal.fire({ title: '預約失敗', text: `原因：${errorMessage}`, icon: 'error', confirmButtonColor: '#C2A3AC' });
             }
         } catch (error) {
             Swal.fire({ title: '連線中斷', text: '無法連上伺服器', icon: 'warning', confirmButtonColor: '#C2A3AC' });
         }
     });
 
-// 4. 查詢預約功能
+    // 4. 修正後的查詢功能
     document.getElementById("searchBtn").addEventListener("click", async function() {
-        // 這裡幫你加上 .trim() 避免客人不小心多按到空白鍵
         const phone = document.getElementById("searchPhone").value.trim();
         if(!phone) {
             Swal.fire({ icon: 'warning', text: '請輸入電話號碼', confirmButtonColor: '#C2A3AC' });
             return;
         }
-        
+        const resultsDiv = document.getElementById("searchResults");
+        resultsDiv.innerHTML = "<p class='text-muted text-center'>查詢中...</p>";
+
         try {
             const res = await fetch(`${API_URL}/bookings/${phone}`);
-            const resultsDiv = document.getElementById("searchResults");
-            
             if(res.ok) {
                 const bookings = await res.json();
-                if(bookings.length === 0) {
+                if(!bookings || bookings.length === 0) {
                     resultsDiv.innerHTML = "<p class='text-muted text-center'>目前沒有找到您的預約紀錄喔！</p>";
                     return;
                 }
-                
                 let html = "<ul class='list-group'>";
                 bookings.forEach(b => {
-                    // 💡 關鍵修正：換成新的標籤 start_time (為了保險，我們加上 || 讓他新舊都認得)
                     const timeString = b.start_time || b.booking_time; 
+                    if(!timeString) return;
                     const dt = new Date(timeString);
-                    const statusText = b.status || "預約成功";
-
+                    const displayTime = isNaN(dt.getTime()) ? "時間格式有誤" : dt.toLocaleString('zh-TW', {month: 'numeric', day: 'numeric', hour: '2-digit', minute:'2-digit'});
                     html += `<li class='list-group-item d-flex justify-content-between align-items-center' style='border-color: #E0D4D8;'>
-                                <span style='color: #5C4E54;'><b>${b.service_name}</b><br><small>${dt.toLocaleString('zh-TW', {month: 'numeric', day: 'numeric', hour: '2-digit', minute:'2-digit'})}</small></span>
-                                <span class='badge' style='background-color: #C2A3AC; font-size: 0.9rem;'>${statusText}</span>
+                                <span style='color: #5C4E54;'><b>${b.service_name}</b><br><small>${displayTime}</small></span>
+                                <span class='badge' style='background-color: #C2A3AC; font-size: 0.9rem;'>${b.status || '已確認'}</span>
                              </li>`;
                 });
                 html += "</ul>";
                 resultsDiv.innerHTML = html;
             } else {
-                resultsDiv.innerHTML = "<p class='text-danger text-center'>查詢失敗，請稍後再試。</p>";
+                resultsDiv.innerHTML = "<p class='text-danger text-center'>查詢失敗，請確認電話號碼是否正確。</p>";
             }
         } catch (error) {
-            Swal.fire({ icon: 'error', title: '連線失敗', text: '無法連線到伺服器查詢' });
+            resultsDiv.innerHTML = "<p class='text-danger text-center'>連線失敗，請稍後再試。</p>";
         }
     });
 </script>
