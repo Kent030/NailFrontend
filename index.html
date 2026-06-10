@@ -86,7 +86,7 @@
 <script>
     const API_URL = "https://nail-booking-api-bx93.onrender.com";
 
-    // 1. 動態產生時間
+    // 1. 動態產生時間 (8點~23點，每5分鐘)
     document.addEventListener("DOMContentLoaded", function() {
         const hourSelect = document.getElementById("bookingHour");
         for(let i = 8; i <= 23; i++){
@@ -119,16 +119,22 @@
             return;
         }
 
-        // 🧠 ✨ 新增核心智慧連動：自動攔截整天店休的預約
+        // 🧠 ✨ 時區校正版智慧攔截機制
         try {
             const checkRes = await fetch(`${API_URL}/bookings/`);
             if (checkRes.ok) {
                 const allBookings = await checkRes.json();
-                // 檢查是否有符合該日期，且帶有「整天休息」標籤的紀錄
+                
                 const isDayOff = allBookings.some(b => {
                     const name = b.user_name || b.customer_name || "";
                     const time = b.start_time || b.booking_time || "";
-                    return name.includes("🔒 整天休息") && time.startsWith(date);
+                    if (!time) return false;
+
+                    // 💡 將伺服器傳回的時間丟進 Date 物件，強制轉回客人的在地時間（解決時區倒退問題）
+                    const d = new Date(time);
+                    const localDateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                    
+                    return name.includes("🔒 整天休息") && localDateStr === date;
                 });
 
                 if (isDayOff) {
@@ -138,7 +144,7 @@
                         icon: 'info',
                         confirmButtonColor: '#C2A3AC'
                     });
-                    return; // 💡 成功阻擋，直接中斷不送出
+                    return; 
                 }
             }
         } catch (err) {
