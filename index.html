@@ -7,6 +7,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     
     <style>
         body { background-color: #F5EEF0; color: #5C4E54; font-family: 'Helvetica Neue', '微軟正黑體', Arial, sans-serif; padding: 20px 10px; }
@@ -20,16 +21,7 @@
         .btn-primary:hover { background-color: #B08E98 !important; transform: translateY(-2px); box-shadow: 0 6px 15px rgba(176, 142, 152, 0.4); }
         .btn-outline-secondary { border-radius: 12px; border-color: #C2A3AC; color: #C2A3AC; font-weight: bold; }
         .btn-outline-secondary:hover { background-color: #C2A3AC; color: white; }
-
-        /* 客人端行事曆粉嫩色調優化 */
-        :root {
-            --fc-border-color: #EEDEE2;
-            --fc-button-bg-color: #C2A3AC;
-            --fc-button-border-color: #C2A3AC;
-            --fc-button-hover-bg-color: #B08E98;
-            --fc-button-active-bg-color: #B08E98;
-            --fc-today-bg-color: #FCFAFB;
-        }
+        :root { --fc-border-color: #EEDEE2; --fc-button-bg-color: #C2A3AC; --fc-button-border-color: #C2A3AC; --fc-button-hover-bg-color: #B08E98; --fc-button-active-bg-color: #B08E98; --fc-today-bg-color: #FCFAFB; }
         #customerCalendar { background: white; padding: 10px; border-radius: 15px; min-height: 500px; }
         .fc-header-toolbar h2 { font-size: 1.3rem !important; color: #8A737A !important; }
         .fc-event-title { font-weight: bold; }
@@ -48,7 +40,7 @@
                 <div class="calendar-hint">
                     <span class="dot" style="background-color: #D6C5C9;"></span> 🚫 已被預約 (保護隱私)
                     <span class="dot" style="background-color: #7A7A7A;"></span> 🔒 店休 / 老闆行程
-                    <br><small class="text-muted">💡 密技：直接在行事曆上點擊你想預約的「日期」，右側表格就會自動幫你填好日期喔！</small>
+                    <br><small class="text-muted">💡 密技：直接在行事曆上點擊你想預約的「日期」，右側表格就會自動幫你填好喔！</small>
                 </div>
                 <div id="customerCalendar"></div>
             </div>
@@ -93,7 +85,7 @@
                             </div>
                         </div>
                     </div>
-                    <button type="submit" class="btn btn-primary">送出預約</button>
+                    <button type="submit" class="btn btn-primary" id="submitBtn">送出預約</button>
                 </form>
             </div>
 
@@ -118,10 +110,14 @@
 
 <script>
     const API_URL = "https://nail-booking-api-bx93.onrender.com";
+    
+    // 🛑 注意！請務必把下面引號裡的字，換成你的真實 LIFF ID
+    const MY_LIFF_ID = "請把你的_LIFF_ID_貼在這裡"; 
+    
     let calendar;
+    let userLineId = null; // 用來悄悄裝載客人 LINE ID 的秘密口袋
 
-    // 1. 初始化與時間選項動態產生
-    document.addEventListener("DOMContentLoaded", function() {
+    document.addEventListener("DOMContentLoaded", async function() {
         const hourSelect = document.getElementById("bookingHour");
         for(let i = 8; i <= 23; i++){
             hourSelect.innerHTML += `<option value="${i.toString().padStart(2, '0')}">${i.toString().padStart(2, '0')}</option>`;
@@ -132,11 +128,29 @@
             minSelect.innerHTML += `<option value="${m}">${m}</option>`;
         }
 
-        // 初始化客人的專屬行事曆
         initCustomerCalendar();
+
+        // ✨ 啟動 LIFF 攔截器
+        try {
+            await liff.init({ liffId: MY_LIFF_ID });
+            
+            if (liff.isLoggedIn()) {
+                // 如果已經授權過，秒抓客人資料
+                const profile = await liff.getProfile();
+                userLineId = profile.userId;
+                
+                // 貼心小彩蛋：自動把客人的 LINE 暱稱填進姓名欄位！
+                document.getElementById("userName").value = profile.displayName;
+            } else {
+                // 如果沒授權過，跳轉到 LINE 登入畫面
+                liff.login();
+            }
+        } catch (err) {
+            console.log("LIFF 初始化失敗或未在 LINE 環境中執行", err);
+            // 即使出錯，也不要阻擋客人繼續網頁操作
+        }
     });
 
-    // 2. 日期防呆限制
     const dateInput = document.getElementById('bookingDate');
     if(dateInput) {
         const today = new Date();
@@ -144,7 +158,6 @@
         dateInput.setAttribute('min', today.toISOString().split('T')[0]);
     }
 
-    // 3. 建立客人端唯讀行事曆
     function initCustomerCalendar() {
         const calendarEl = document.getElementById('customerCalendar');
         calendar = new FullCalendar.Calendar(calendarEl, {
@@ -153,8 +166,6 @@
             headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek' },
             buttonText: { today: '今天', month: '月', week: '週' },
             height: 'auto',
-            
-            // ✨ 貼心小功能：客人點擊行事曆日期，右側表單自動填寫該日期！
             dateClick: function(info) {
                 let clickedDate = info.dateStr.split("T")[0];
                 const todayStr = new Date().toISOString().split('T')[0];
@@ -162,8 +173,6 @@
                     document.getElementById("bookingDate").value = clickedDate;
                 }
             },
-            
-            // 客人點擊已被佔用的行程時，跳窗提示
             eventClick: function(info) {
                 Swal.fire({
                     title: info.event.title,
@@ -177,7 +186,6 @@
         calendar.render();
     }
 
-    // 4. 抓取資料並進行隱私遮罩
     async function fetchCustomerEvents(fetchInfo, successCallback, failureCallback) {
         try {
             const response = await fetch(`${API_URL}/bookings/`);
@@ -190,30 +198,16 @@
 
                 let startTime = new Date(timeString);
                 let endTime = new Date(startTime.getTime() + 2 * 60 * 60 * 1000); 
-                
                 const isBoss = nameString.includes("🔒") || nameString.includes("休息");
                 const isAllDay = nameString.includes("整天休息");
 
-                let displayTitle = "";
-                let eventColor = "";
-
-                if (isBoss) {
-                    // 💡 老闆行程：大方顯示公休原因
-                    displayTitle = nameString.replace("🔒 整天休息: ", "🔒 ").replace("🔒 休息: ", "🔒 ");
-                    eventColor = '#7A7A7A'; // 老闆灰
-                } else {
-                    // 💡 客人行程：啟動隱私保護機制，抹除姓名電話！
-                    displayTitle = "🚫 已被預約";
-                    eventColor = '#D6C5C9'; // 淡淡的莫蘭迪遮罩粉灰
-                }
-                
                 return {
-                    title: displayTitle,
+                    title: isBoss ? nameString.replace("🔒 整天休息: ", "🔒 ").replace("🔒 休息: ", "🔒 ") : "🚫 已被預約",
                     start: timeString,
                     end: isAllDay ? null : endTime.toISOString(),
                     allDay: isAllDay,
-                    color: eventColor,
-                    editable: false // 客人端唯讀，不可拖拽
+                    color: isBoss ? '#7A7A7A' : '#D6C5C9',
+                    editable: false
                 };
             }).filter(e => e !== null);
             successCallback(events);
@@ -222,7 +216,6 @@
         }
     }
 
-    // 5. 送出預約功能 (含時區校正店休防呆)
     document.getElementById("bookingForm").addEventListener("submit", async function(e) {
         e.preventDefault();
         const date = document.getElementById("bookingDate").value;
@@ -234,7 +227,6 @@
             return;
         }
 
-        // 時區校正版智慧店休攔截
         try {
             const checkRes = await fetch(`${API_URL}/bookings/`);
             if (checkRes.ok) {
@@ -243,12 +235,10 @@
                     const name = b.user_name || b.customer_name || "";
                     const time = b.start_time || b.booking_time || "";
                     if (!time) return false;
-
                     const d = new Date(time);
                     const localDateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
                     return name.includes("🔒 整天休息") && localDateStr === date;
                 });
-
                 if (isDayOff) {
                     Swal.fire({ title: '今天不營業喔！', text: '老闆這天排定整天休息，請換個日子試試看！', icon: 'info', confirmButtonColor: '#C2A3AC' });
                     return; 
@@ -256,11 +246,17 @@
             }
         } catch (err) { console.log(err); }
 
+        const submitBtn = document.getElementById("submitBtn");
+        submitBtn.disabled = true;
+        submitBtn.innerText = "⏳ 預約發送中...";
+
+        // ✨ 關鍵改動：把抓到的 userLineId 一起裝進包裹裡送給大腦
         const payload = {
             user_name: document.getElementById("userName").value.trim(),
             user_phone: document.getElementById("userPhone").value.trim(),
             service_name: document.getElementById("serviceName").value,
-            start_time: `${date}T${hour}:${minute}:00`
+            start_time: `${date}T${hour}:${minute}:00`,
+            line_user_id: userLineId  // 這是新加的！後端如果看到這個，就知道要發 LINE 訊息了
         };
 
         try {
@@ -273,7 +269,9 @@
                 Swal.fire({ title: '預約成功！', text: '期待為您服務 💅', icon: 'success', confirmButtonColor: '#C2A3AC' })
                 .then(() => {
                     document.getElementById('bookingForm').reset();
-                    calendar.refetchEvents(); // ✨ 自動重新整理左側行事曆！
+                    // 恢復剛剛自動抓到的 LINE 暱稱
+                    if(userLineId) document.getElementById("userName").value = liff.getProfile().displayName;
+                    calendar.refetchEvents(); 
                 });
             } else {
                 let data = await response.json();
@@ -282,10 +280,12 @@
             }
         } catch (error) {
             Swal.fire({ title: '連線中斷', text: '無法連上伺服器', icon: 'warning', confirmButtonColor: '#C2A3AC' });
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerText = "送出預約";
         }
     });
 
-    // 6. 前端篩選查詢與取消功能
     document.getElementById("searchBtn").addEventListener("click", async function() {
         const name = document.getElementById("searchName").value.trim();
         const phone = document.getElementById("searchPhone").value.trim();
@@ -355,7 +355,7 @@
                 if(res.ok) {
                     Swal.fire({ title: '已取消', text: '您的預約已經成功取消！', icon: 'success', confirmButtonColor: '#C2A3AC' });
                     document.getElementById("searchBtn").click(); 
-                    calendar.refetchEvents(); // ✨ 取消成功後，同時連動刷新行事曆！
+                    calendar.refetchEvents();
                 } else {
                     Swal.fire({ title: '取消失敗', text: '請聯繫老闆人工處理。', icon: 'error', confirmButtonColor: '#C2A3AC' });
                 }
