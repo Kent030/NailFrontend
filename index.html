@@ -149,17 +149,20 @@
 <script>
     const API_URL = "https://nail-booking-api-bx93.onrender.com";
 
-    // 1. 確保網頁載入後，動態產生時間選項
+    // 1. 確保網頁載入後，動態產生時間選項 (8點~23點，每5分鐘)
     document.addEventListener("DOMContentLoaded", function() {
+        // 產生小時：從 8 點到 23 點
         const hourSelect = document.getElementById("bookingHour");
-        for(let i = 10; i <= 20; i++){
+        for(let i = 8; i <= 23; i++){
             hourSelect.innerHTML += `<option value="${i.toString().padStart(2, '0')}">${i.toString().padStart(2, '0')}</option>`;
         }
 
+        // 產生分鐘：從 0 開始，每次加 5，直到小於 60 (0, 5, 10...55)
         const minSelect = document.getElementById("bookingMinute");
-        ["00", "30"].forEach(m => {
+        for(let i = 0; i < 60; i += 5){
+            let m = i.toString().padStart(2, '0');
             minSelect.innerHTML += `<option value="${m}">${m}</option>`;
-        });
+        }
     });
 
     // 2. 設定日期只能選擇今天以後
