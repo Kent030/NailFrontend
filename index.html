@@ -66,11 +66,14 @@
         </form>
     </div>
 
-    <div class="booking-card mt-4">
+   <div class="booking-card mt-4">
         <h3>🔍 查詢我的預約</h3>
         <div class="row g-2 mb-3">
-            <div class="col-10">
-                <input type="tel" class="form-control" id="searchPhone" placeholder="請輸入預約時的聯絡電話">
+            <div class="col-5">
+                <input type="text" class="form-control" id="searchName" placeholder="您的姓名">
+            </div>
+            <div class="col-5">
+                <input type="tel" class="form-control" id="searchPhone" placeholder="聯絡電話">
             </div>
             <div class="col-2">
                 <button class="btn btn-outline-secondary w-100" type="button" id="searchBtn">查詢</button>
@@ -78,7 +81,6 @@
         </div>
         <div id="searchResults" class="mt-3"></div>
     </div>
-</div>
 
 <script>
     const API_URL = "https://nail-booking-api-bx93.onrender.com";
@@ -142,28 +144,35 @@
         }
     });
 
-    // 4. 繞道戰術：抓取全部資料後在前端篩選
+   // 4. 姓名+電話精準查詢功能
     document.getElementById("searchBtn").addEventListener("click", async function() {
+        const name = document.getElementById("searchName").value.trim();
         const phone = document.getElementById("searchPhone").value.trim();
-        if(!phone) {
-            Swal.fire({ icon: 'warning', text: '請輸入電話號碼', confirmButtonColor: '#C2A3AC' });
+
+        // 防呆：兩個都必須填寫
+        if(!name || !phone) {
+            Swal.fire({ icon: 'warning', text: '為了保護您的隱私，請同時輸入「姓名」與「聯絡電話」喔！', confirmButtonColor: '#C2A3AC' });
             return;
         }
+        
         const resultsDiv = document.getElementById("searchResults");
-        resultsDiv.innerHTML = "<p class='text-muted text-center'>查詢中...</p>";
+        resultsDiv.innerHTML = "<p class='text-muted text-center'>🔍 查詢中...</p>";
 
         try {
-            // 💡 密技：直接呼叫沒有加電話號碼的網址，抓下「所有」預約 (這招老闆後台用過，絕對會通！)
+            // 先抓下全部預約
             const res = await fetch(`${API_URL}/bookings/`);
             
             if(res.ok) {
                 const allBookings = await res.json();
                 
-                // 🧠 JavaScript 大腦出動：從所有預約中，挑出電話號碼一樣的！
-                const myBookings = allBookings.filter(b => b.user_phone === phone || b.phone === phone);
+                // 🧠 嚴格比對：姓名 AND 電話 都要完全一樣才算數
+                const myBookings = allBookings.filter(b => 
+                    (b.user_name === name || b.customer_name === name) && 
+                    (b.user_phone === phone || b.phone === phone)
+                );
                 
                 if(!myBookings || myBookings.length === 0) {
-                    resultsDiv.innerHTML = "<p class='text-muted text-center'>目前沒有找到您的預約紀錄喔！</p>";
+                    resultsDiv.innerHTML = "<p class='text-muted text-center'>找不到符合的預約，請確認「姓名」與「電話」是否填寫正確喔！</p>";
                     return;
                 }
                 
@@ -174,9 +183,17 @@
                     const dt = new Date(timeString);
                     const displayTime = isNaN(dt.getTime()) ? "時間格式有誤" : dt.toLocaleString('zh-TW', {month: 'numeric', day: 'numeric', hour: '2-digit', minute:'2-digit'});
                     
+                    // 抓取資料庫給這筆訂單的獨有 ID (通常是 id 或是 _id)
+                    const bookingId = b.id || b._id || "";
+
                     html += `<li class='list-group-item d-flex justify-content-between align-items-center' style='border-color: #E0D4D8;'>
-                                <span style='color: #5C4E54;'><b>${b.service_name}</b><br><small>${displayTime}</small></span>
-                                <span class='badge' style='background-color: #C2A3AC; font-size: 0.9rem;'>${b.status || '已確認'}</span>
+                                <div style='color: #5C4E54; text-align: left;'>
+                                    <b>${b.service_name}</b><br><small>${displayTime}</small>
+                                </div>
+                                <div>
+                                    <span class='badge me-2' style='background-color: #C2A3AC; font-size: 0.9rem;'>${b.status || '已確認'}</span>
+                                    ${bookingId ? `<button class="btn btn-sm btn-outline-danger" onclick="cancelBooking('${bookingId}')">取消</button>` : ''}
+                                </div>
                              </li>`;
                 });
                 html += "</ul>";
@@ -188,6 +205,41 @@
             resultsDiv.innerHTML = "<p class='text-danger text-center'>連線失敗，請稍後再試。</p>";
         }
     });
+
+    // 5. 取消預約的專屬功能
+    window.cancelBooking = async function(id) {
+        const result = await Swal.fire({
+            title: '確定要取消預約嗎？',
+            text: "取消後無法恢復，若要重做美甲需要重新預約喔！",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#C2A3AC',
+            confirmButtonText: '確認取消',
+            cancelButtonText: '保留預約'
+        });
+
+        if (result.isConfirmed) {
+            try {
+                // 傳送 DELETE 刪除請求給後端大腦
+                const res = await fetch(`${API_URL}/bookings/${id}`, {
+                    method: "DELETE"
+                });
+
+                if(res.ok) {
+                    Swal.fire({ title: '已取消', text: '您的預約已經成功取消！', icon: 'success', confirmButtonColor: '#C2A3AC' });
+                    // 自動重新點擊查詢按鈕，讓清單刷新
+                    document.getElementById("searchBtn").click(); 
+                } else {
+                    let err = await res.text();
+                    console.log("取消失敗:", err);
+                    Swal.fire({ title: '取消失敗', text: '系統拒絕了您的取消請求，請聯繫老闆人工處理。', icon: 'error', confirmButtonColor: '#C2A3AC' });
+                }
+            } catch (error) {
+                Swal.fire({ title: '連線中斷', text: '無法連上伺服器', icon: 'warning', confirmButtonColor: '#C2A3AC' });
+            }
+        }
+    };
 </script>
 </body>
 </html>
