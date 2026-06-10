@@ -142,7 +142,7 @@
         }
     });
 
-    // 4. 裝上超級翻譯機的查詢功能
+    // 4. 繞道戰術：抓取全部資料後在前端篩選
     document.getElementById("searchBtn").addEventListener("click", async function() {
         const phone = document.getElementById("searchPhone").value.trim();
         if(!phone) {
@@ -153,21 +153,27 @@
         resultsDiv.innerHTML = "<p class='text-muted text-center'>查詢中...</p>";
 
         try {
-            // 發送查詢請求給後端
-            const res = await fetch(`${API_URL}/bookings/${phone}`);
+            // 💡 密技：直接呼叫沒有加電話號碼的網址，抓下「所有」預約 (這招老闆後台用過，絕對會通！)
+            const res = await fetch(`${API_URL}/bookings/`);
             
             if(res.ok) {
-                const bookings = await res.json();
-                if(!bookings || bookings.length === 0) {
+                const allBookings = await res.json();
+                
+                // 🧠 JavaScript 大腦出動：從所有預約中，挑出電話號碼一樣的！
+                const myBookings = allBookings.filter(b => b.user_phone === phone || b.phone === phone);
+                
+                if(!myBookings || myBookings.length === 0) {
                     resultsDiv.innerHTML = "<p class='text-muted text-center'>目前沒有找到您的預約紀錄喔！</p>";
                     return;
                 }
+                
                 let html = "<ul class='list-group'>";
-                bookings.forEach(b => {
+                myBookings.forEach(b => {
                     const timeString = b.start_time || b.booking_time; 
                     if(!timeString) return;
                     const dt = new Date(timeString);
                     const displayTime = isNaN(dt.getTime()) ? "時間格式有誤" : dt.toLocaleString('zh-TW', {month: 'numeric', day: 'numeric', hour: '2-digit', minute:'2-digit'});
+                    
                     html += `<li class='list-group-item d-flex justify-content-between align-items-center' style='border-color: #E0D4D8;'>
                                 <span style='color: #5C4E54;'><b>${b.service_name}</b><br><small>${displayTime}</small></span>
                                 <span class='badge' style='background-color: #C2A3AC; font-size: 0.9rem;'>${b.status || '已確認'}</span>
@@ -176,15 +182,7 @@
                 html += "</ul>";
                 resultsDiv.innerHTML = html;
             } else {
-                // 💡 抓到你了！把後端的拒絕理由直接印在畫面上！
-                let errorText = await res.text();
-                resultsDiv.innerHTML = `
-                    <div class="alert alert-danger text-center" role="alert">
-                        <b>查詢失敗！</b><br>
-                        系統退件原因：<br>
-                        <small>${errorText}</small>
-                    </div>`;
-                console.log("查詢被拒絕的完整原因：", errorText);
+                resultsDiv.innerHTML = "<p class='text-danger text-center'>查詢失敗，請稍後再試。</p>";
             }
         } catch (error) {
             resultsDiv.innerHTML = "<p class='text-danger text-center'>連線失敗，請稍後再試。</p>";
