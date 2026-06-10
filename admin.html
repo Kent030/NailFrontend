@@ -24,15 +24,13 @@
         }
         h2 { color: #AE8B96; font-weight: bold; text-align: center; margin-bottom: 25px; }
 
-        /* 行事曆專屬樣式修正 - 莫蘭迪粉化 */
+        /* 行事曆主題色調配 */
         :root {
             --fc-border-color: #EEDEE2;
             --fc-button-bg-color: #C2A3AC;
             --fc-button-border-color: #C2A3AC;
             --fc-button-hover-bg-color: #B08E98;
             --fc-button-active-bg-color: #B08E98;
-            --fc-event-bg-color: #AE8B96;
-            --fc-event-border-color: #AE8B96;
             --fc-today-bg-color: #FCFAFB;
         }
         #calendar {
@@ -41,10 +39,13 @@
             border-radius: 15px;
             min-height: 600px;
         }
-        /* 讓行事曆文字變好看 */
         .fc-header-toolbar h2 { font-size: 1.5rem !important; color: #8A737A !important; }
         .fc-event-title { font-weight: bold; cursor: pointer; }
-        .fc-v-event { border-radius: 6px; padding: 2px; }
+        .fc-v-event { border-radius: 6px; padding: 4px; border: none !important; }
+        
+        /* 提示小標籤樣式 */
+        .color-hint { font-size: 0.9rem; margin-bottom: 15px; text-align: right; }
+        .dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-left: 15px; margin-right: 5px; }
     </style>
 </head>
 <body>
@@ -52,6 +53,13 @@
 <div class="container" id="mainContent" style="display: none;">
     <div class="dashboard-card">
         <h2>👑 預約視覺化看板</h2>
+        
+        <div class="color-hint">
+            <span class="dot" style="background-color: #AE8B96;"></span> 客人預約
+            <span class="dot" style="background-color: #7A7A7A;"></span> 老闆行程 / 店休
+            <br><small class="text-muted">💡 提示：直接點擊行事曆上的「任意格子」即可快速鎖定休假時間！</small>
+        </div>
+
         <div id="calendar"></div>
     </div>
 </div>
@@ -72,7 +80,7 @@
         }).then((result) => {
             if (result.value === 'boss') {
                 document.getElementById('mainContent').style.display = 'block';
-                initCalendar(); // 密碼正確才初始化行事曆
+                initCalendar();
             } else {
                 location.reload();
             }
@@ -83,60 +91,128 @@
     function initCalendar() {
         const calendarEl = document.getElementById('calendar');
         calendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: 'dayGridMonth', // 預設顯示月曆
+            initialView: 'dayGridMonth',
             locale: 'zh-tw',
             headerToolbar: {
                 left: 'prev,next today',
                 center: 'title',
-                right: 'dayGridMonth,timeGridWeek,timeGridDay' // 增加切換週、日的功能
+                right: 'dayGridMonth,timeGridWeek,timeGridDay'
             },
-            buttonText: {
-                today: '今天',
-                month: '月',
-                week: '週',
-                day: '日'
-            },
-            // 當點擊行程時，彈出詳細資訊
+            buttonText: { today: '今天', month: '月', week: '週', day: '日' },
+            
+            // 點擊已有行程查看詳情
             eventClick: function(info) {
                 Swal.fire({
                     title: info.event.title,
                     html: `<div style="text-align: left;">
-                            <b>客人電話：</b>${info.event.extendedProps.phone}<br>
-                            <b>預約時間：</b>${info.event.start.toLocaleString()}
+                            <b>詳情備註：</b>${info.event.extendedProps.service || '無'}<br>
+                            <b>聯絡電話：</b>${info.event.extendedProps.phone}<br>
+                            <b>開始時間：</b>${info.event.start.toLocaleString()}
                            </div>`,
                     icon: 'info',
                     confirmButtonColor: '#C2A3AC'
                 });
             },
-            events: fetchEvents // 這裡去雲端抓資料
+
+            // ✨ 新功能：點擊「空白格子」直接新增老闆休假行程！
+            dateClick: async function(info) {
+                // 自動判斷點擊的是「整天」還是「特定小時」
+                let clickedDate = info.dateStr; // 格式可能是 YYYY-MM-DD 或 YYYY-MM-DDTHH:MM
+                let defaultHour = "08";
+                
+                if(clickedDate.includes("T")) {
+                    // 如果是在「週」或「日」視圖點擊了特定時間
+                    const parts = clickedDate.split("T");
+                    clickedDate = parts[0];
+                    defaultHour = parts[1].substring(0, 2);
+                }
+
+                // 跳出精緻的防呆彈窗填寫休假事由與時間
+                const { value: formValues } = await Swal.fire({
+                    title: '🔒 設定休息 / 不開放預約',
+                    html: `
+                        <div class="text-start mb-2"><b>日期：</b>${clickedDate}</div>
+                        <input id="swal-reason" class="swal2-input" style="margin: 10px 0;" placeholder="請輸入休假事由 (例如：私人行程、店休)">
+                        <div class="text-start mt-2">
+                            <label class="form-label"><b>開始時間 (小時)：</b></label>
+                            <select id="swal-hour" class="form-select d-inline-block w-50">
+                                ${Array.from({length: 16}, (_, i) => i + 8).map(h => {
+                                    let hStr = h.toString().padStart(2, '0');
+                                    return `<option value="${hStr}" ${hStr===defaultHour?'selected':''}>${hStr} 點</option>`;
+                                }).join('')}
+                            </select>
+                        </div>
+                    `,
+                    focusConfirm: false,
+                    confirmButtonColor: '#C2A3AC',
+                    confirmButtonText: '確認鎖定',
+                    showCancelButton: true,
+                    cancelButtonText: '取消',
+                    preConfirm: () => {
+                        return {
+                            reason: document.getElementById('swal-reason').value || "老闆私人行程",
+                            hour: document.getElementById('swal-hour').value
+                        }
+                    }
+                });
+
+                if (formValues) {
+                    // 組裝成跟客人預約一樣的格式發送出去
+                    const payload = {
+                        customer_name: "🔒 老闆休息",
+                        phone: "0000000000", // 老闆專用辨識代碼
+                        service_name: formValues.reason,
+                        booking_time: `${clickedDate}T${formValues.hour}:00:00`
+                    };
+
+                    try {
+                        const res = await fetch(`${API_URL}/bookings/`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify(payload)
+                        });
+                        if(res.ok) {
+                            Swal.fire({ icon: 'success', title: '已成功鎖定該時段！', confirmButtonColor: '#C2A3AC' });
+                            calendar.refetchEvents(); // 重新整理行事曆畫面
+                        } else {
+                            Swal.fire({ icon: 'error', title: '鎖定失敗', text: '該時段可能已經有客人預約囉！' });
+                        }
+                    } catch (error) {
+                        Swal.fire({ icon: 'error', title: '系統連線失敗' });
+                    }
+                }
+            },
+            events: fetchEvents
         });
         calendar.render();
     }
 
-    // 3. 去 Render 抓預約資料並轉換成行事曆格式
+    // 3. 抓取資料並著色
     async function fetchEvents(fetchInfo, successCallback, failureCallback) {
         try {
             const response = await fetch(`${API_URL}/bookings/`);
             const data = await response.json();
             
-            // 將資料轉換成 FullCalendar 格式
             const events = data.map(b => {
-                // 假設每次美甲大約 2 小時 (可以根據 service_name 調整)
                 let startTime = new Date(b.booking_time);
-                let endTime = new Date(startTime.getTime() + 2 * 60 * 60 * 1000); 
+                let endTime = new Date(startTime.getTime() + 2 * 60 * 60 * 1000); // 預設區塊佔 2 小時
 
+                // 🧠 核心智慧判斷：如果是老闆的行程，就塗上高級灰色
+                const isBoss = b.customer_name.includes("老闆");
+                
                 return {
-                    title: `💅 ${b.customer_name} - ${b.service_name}`,
+                    title: isBoss ? `🔒 ${b.service_name}` : `💅 ${b.customer_name}`,
                     start: b.booking_time,
                     end: endTime.toISOString(),
+                    color: isBoss ? '#7A7A7A' : '#AE8B96', // 老闆灰 vs 客人粉
                     extendedProps: {
-                        phone: b.phone
+                        phone: b.phone,
+                        service: b.service_name
                     }
                 };
             });
             successCallback(events);
         } catch (error) {
-            console.error("抓取失敗:", error);
             failureCallback(error);
         }
     }
