@@ -212,7 +212,7 @@
             
             const data = await response.json();
             
-            if(response.ok) {
+           if(response.ok) {
                 Swal.fire({
                     title: '預約成功！',
                     text: '我們已經收到您的預約資訊，期待為您服務 💅',
@@ -221,6 +221,26 @@
                     confirmButtonText: '好的'
                 }).then(() => {
                     document.getElementById('bookingForm').reset();
+                });
+            } else {
+                // 💡 超級翻譯機：把後端複雜的錯誤物件，強制轉成人類看得懂的文字
+                let errorMessage = "未知錯誤";
+                if (data.detail) {
+                    if (Array.isArray(data.detail)) {
+                        // 如果錯誤是一個清單，就把每個錯誤原因抽出來
+                        errorMessage = data.detail.map(err => err.msg || JSON.stringify(err)).join(", ");
+                    } else if (typeof data.detail === 'object') {
+                        errorMessage = JSON.stringify(data.detail);
+                    } else {
+                        errorMessage = data.detail;
+                    }
+                }
+                
+                Swal.fire({
+                    title: '預約失敗',
+                    text: `系統退件原因：${errorMessage}`,
+                    icon: 'error',
+                    confirmButtonColor: '#C2A3AC'
                 });
             } else {
                 Swal.fire({
