@@ -122,10 +122,10 @@
         }
 
         const payload = {
-            customer_name: document.getElementById("userName").value.trim(),
-            phone: document.getElementById("userPhone").value.trim(),
+            user_name: document.getElementById("userName").value.trim(),
+            user_phone: document.getElementById("userPhone").value.trim(),
             service_name: document.getElementById("serviceName").value,
-            booking_time: `${date}T${hour}:${minute}:00`
+            start_time: `${date}T${hour}:${minute}:00`
         };
 
         try {
