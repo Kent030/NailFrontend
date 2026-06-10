@@ -142,7 +142,7 @@
         }
     });
 
-    // 4. 修正後的查詢功能
+    // 4. 裝上超級翻譯機的查詢功能
     document.getElementById("searchBtn").addEventListener("click", async function() {
         const phone = document.getElementById("searchPhone").value.trim();
         if(!phone) {
@@ -153,7 +153,9 @@
         resultsDiv.innerHTML = "<p class='text-muted text-center'>查詢中...</p>";
 
         try {
+            // 發送查詢請求給後端
             const res = await fetch(`${API_URL}/bookings/${phone}`);
+            
             if(res.ok) {
                 const bookings = await res.json();
                 if(!bookings || bookings.length === 0) {
@@ -174,7 +176,15 @@
                 html += "</ul>";
                 resultsDiv.innerHTML = html;
             } else {
-                resultsDiv.innerHTML = "<p class='text-danger text-center'>查詢失敗，請確認電話號碼是否正確。</p>";
+                // 💡 抓到你了！把後端的拒絕理由直接印在畫面上！
+                let errorText = await res.text();
+                resultsDiv.innerHTML = `
+                    <div class="alert alert-danger text-center" role="alert">
+                        <b>查詢失敗！</b><br>
+                        系統退件原因：<br>
+                        <small>${errorText}</small>
+                    </div>`;
+                console.log("查詢被拒絕的完整原因：", errorText);
             }
         } catch (error) {
             resultsDiv.innerHTML = "<p class='text-danger text-center'>連線失敗，請稍後再試。</p>";
