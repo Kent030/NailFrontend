@@ -3,29 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>正在前往預約系統...</title>
+    <title>美甲工作室 - 線上預約</title>
     <style>
-        body { background-color: #F5EEF0; color: #5C4E54; font-family: '微軟正黑體', sans-serif; text-align: center; padding-top: 20vh; margin: 0; }
-        .box { background: white; padding: 40px 20px; margin: 20px; border-radius: 20px; box-shadow: 0 10px 20px rgba(174, 139, 150, 0.2); }
-        h2 { color: #AE8B96; margin-bottom: 10px; }
-        .btn { background-color: #06C755; color: white; padding: 16px 32px; border-radius: 30px; text-decoration: none; font-weight: bold; font-size: 1.1rem; display: inline-block; margin-top: 25px; box-shadow: 0 4px 15px rgba(6, 199, 85, 0.3); }
+        body { background-color: #F5EEF0; color: #5C4E54; font-family: '微軟正黑體', sans-serif; text-align: center; padding-top: 15vh; margin: 0; }
+        .box { background: white; padding: 40px 20px; margin: 20px; border-radius: 20px; box-shadow: 0 10px 20px rgba(174, 139, 150, 0.2); max-width: 400px; display: inline-block; }
+        h2 { color: #AE8B96; margin-bottom: 10px; font-size: 1.5rem; }
+        p { color: #8A737A; font-size: 1rem; line-height: 1.6; }
+        .btn { background-color: #06C755; color: white; padding: 16px 40px; border-radius: 30px; text-decoration: none; font-weight: bold; font-size: 1.2rem; display: inline-block; margin-top: 25px; box-shadow: 0 4px 15px rgba(6, 199, 85, 0.4); transition: transform 0.1s; }
+        .btn:active { transform: scale(0.95); }
     </style>
 </head>
 <body>
     <div class="box">
-        <h2>💅 準備進入預約系統</h2>
-        <p style="color: #8A737A;">系統正在為您啟動 LINE App...</p>
+        <h2>💅 歡迎光臨 LinNailStudio</h2>
+        <p>為了解鎖「預約成功簡訊通知」<br>與「行事曆自動提醒」功能，<br>請點擊下方按鈕開啟 LINE 預約！</p>
         
-        <a href="line://app/2010362533-EhsVdHbp" class="btn">🟢 點我打開 LINE 預約</a>
-        
-        <p style="font-size: 0.85rem; color: #aaa; margin-top: 20px;">(若無反應，請點擊上方綠色按鈕，或點擊右上角「在預設瀏覽器中開啟」)</p>
+        <a href="https://liff.line.me/2010362533-EhsVdHbp" class="btn">🟢 開啟 LINE 一鍵預約</a>
     </div>
-
-    <script>
-        // 🚀 網頁載入後立即發射底層代碼，強行喚醒手機的 LINE App
-        setTimeout(() => {
-            window.location.href = "line://app/2010362533-EhsVdHbp";
-        }, 300);
-    </script>
 </body>
 </html>
