@@ -141,10 +141,10 @@
                 if (formValues) {
                     // ✨ 偷渡大師：把原因寫在姓名裡，用「單色凝膠」騙過後端審查！
                     const payload = {
-                        customer_name: `🔒 休息 (${formValues.reason})`, 
-                        phone: "0900000000", 
-                        service_name: "單色凝膠", // 乖乖填寫後端認得的項目
-                        booking_time: `${clickedDate}T${formValues.hour}:00:00`
+                        user_name: `🔒 休息 (${formValues.reason})`, 
+                        user_phone: "0999999999", 
+                        service_name: "單色凝膠",
+                        start_time: `${clickedDate}T${formValues.hour}:00:00`
                     };
 
                     try {
