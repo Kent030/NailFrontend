@@ -75,7 +75,7 @@
                             </div>
                             <div class="col-3">
                                 <select class="form-select" id="bookingHour" required>
-                                    <option value="" disabled selected>點</option>
+                                    <option value="" disabled selected>時</option>
                                 </select>
                             </div>
                             <div class="col-3">
@@ -218,15 +218,27 @@
 
     document.getElementById("bookingForm").addEventListener("submit", async function(e) {
         e.preventDefault();
-        const date = document.getElementById("bookingDate").value;
-        const hour = document.getElementById("bookingHour").value;
-        const minute = document.getElementById("bookingMinute").value;
         
-        if (new Date(`${date}T${hour}:${minute}:00`) < new Date()) {
-            Swal.fire({ title: '哎呀！時光不能倒流', text: '您選擇的時間已經過去囉！', icon: 'warning', confirmButtonColor: '#C2A3AC' });
-            return;
+        // 🚨【嚴格模式】檢查有沒有抓到 LINE ID
+        if (!userLineId || userLineId === "undefined") {
+            Swal.fire({
+                title: '需要 LINE 授權',
+                text: '為了解鎖「預約成功通知」與「前一天自動提醒」功能，請點擊下方按鈕重新登入授權喔！',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#C2A3AC',
+                cancelButtonColor: '#aaa',
+                confirmButtonText: '點我進行 LINE 授權',
+                cancelButtonText: '返回網頁'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    liff.login(); // 強制重新跳出 LINE 登入授權
+                }
+            });
+            return; // 攔截！不開小門，直接中斷不讓後端送出！
         }
 
+        // ... 底下接原本的日期過去檢查、店休檢查、payload 送出 ...
         try {
             const checkRes = await fetch(`${API_URL}/bookings/`);
             if (checkRes.ok) {
