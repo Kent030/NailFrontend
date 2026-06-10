@@ -46,6 +46,7 @@
     const API_URL = "https://nail-booking-api-bx93.onrender.com";
     let calendar;
 
+    // 1. 登入身分驗證
     window.onload = function() {
         Swal.fire({
             title: '老闆身分驗證',
@@ -64,6 +65,7 @@
         });
     };
 
+    // 2. 初始化行事曆
     function initCalendar() {
         const calendarEl = document.getElementById('calendar');
         calendar = new FullCalendar.Calendar(calendarEl, {
@@ -72,19 +74,39 @@
             headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay' },
             buttonText: { today: '今天', month: '月', week: '週', day: '日' },
             
+            // ✨ 升級功能：點擊已有行程，跳出包含「取消/刪除」按鈕的詳情視窗
             eventClick: function(info) {
+                const bookingId = info.event.id;
+                const titleText = info.event.title;
+                const isBoss = titleText.includes("🔒") || titleText.includes("休息");
+                
+                // 依據行程種類，動態生成不同的刪除按鈕
+                let actionButtonHtml = '';
+                if (bookingId) {
+                    if (isBoss) {
+                        actionButtonHtml = `<button class="btn btn-outline-danger w-100 mt-3 fw-bold" onclick="adminDeleteEvent('${bookingId}', '行程')">🔓 刪除此行程 / 恢復上班</button>`;
+                    } else {
+                        actionButtonHtml = `<button class="btn btn-danger w-100 mt-3 fw-bold" onclick="adminDeleteEvent('${bookingId}', '預約')">❌ 取消此客人的預約</button>`;
+                    }
+                }
+
                 Swal.fire({
-                    title: info.event.title,
+                    title: isBoss ? '🔒 老闆行程狀態' : '💅 客人預約詳情',
                     html: `<div style="text-align: left;">
+                            <b>項目名稱：</b>${titleText}<br>
                             <b>項目詳情：</b>${info.event.extendedProps.service || '無'}<br>
                             <b>聯絡電話：</b>${info.event.extendedProps.phone}<br>
-                            <b>開始時間：</b>${info.event.start.toLocaleString()}
-                           </div>`,
-                    icon: 'info',
-                    confirmButtonColor: '#C2A3AC'
+                            <b>開始時間：</b>${info.event.start.toLocaleString('zh-TW')}
+                           </div>
+                           ${actionButtonHtml}`,
+                    showConfirmButton: false, // 隱藏原本的預設確認鈕，改用我們自訂的按鈕
+                    showCancelButton: true,
+                    cancelButtonText: '關閉視窗',
+                    cancelButtonColor: '#C2A3AC'
                 });
             },
 
+            // 點擊空白處鎖定休假
             dateClick: async function(info) {
                 let clickedDate = info.dateStr;
                 let defaultHour = "08";
@@ -153,6 +175,7 @@
         calendar.render();
     }
 
+    // 3. 抓取雲端資料並打包給 FullCalendar (補上唯一識別碼 ID)
     async function fetchEvents(fetchInfo, successCallback, failureCallback) {
         try {
             const response = await fetch(`${API_URL}/bookings/`);
@@ -170,6 +193,7 @@
                 const isBoss = nameString.includes("🔒") || nameString.includes("休息");
                 
                 return {
+                    id: b.id || b._id || "", // 💡 傳遞唯一識別 ID 供刪除使用
                     title: isBoss ? nameString : `💅 ${nameString} - ${b.service_name}`,
                     start: timeString,
                     end: endTime.toISOString(),
@@ -182,6 +206,42 @@
             failureCallback(error);
         }
     }
+
+    // ✨ 4. 老闆端刪除/取消連線功能
+    window.adminDeleteEvent = async function(id, type) {
+        // 先將目前的詳情視窗關閉
+        Swal.close();
+
+        // 再次跳出確認防呆
+        const result = await Swal.fire({
+            title: `確定要刪除這筆${type}嗎？`,
+            text: type === '預約' ? '取消後無法復原，客人端也將查不到此筆預約。' : '刪除後，該時段將重新開放給客人線上預約！',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#C2A3AC',
+            confirmButtonText: '確認刪除',
+            cancelButtonText: '保持原狀'
+        });
+
+        if (result.isConfirmed) {
+            try {
+                const res = await fetch(`${API_URL}/bookings/${id}`, {
+                    method: "DELETE"
+                });
+
+                if (res.ok) {
+                    Swal.fire({ icon: 'success', title: `該${type}已成功刪除！`, confirmButtonColor: '#C2A3AC' });
+                    calendar.refetchEvents(); // 自動刷新行事曆積木畫面
+                } else {
+                    let errText = await res.text();
+                    Swal.fire({ icon: 'error', title: '刪除失敗', text: `系統拒絕：${errText}`, confirmButtonColor: '#C2A3AC' });
+                }
+            } catch (error) {
+                Swal.fire({ icon: 'error', title: '系統連線中斷', text: '無法連上伺服器發送刪除請求。', confirmButtonColor: '#C2A3AC' });
+            }
+        }
+    };
 </script>
 </body>
 </html>
