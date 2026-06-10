@@ -5,16 +5,87 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>單人美甲工作室 - 預約系統</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
     <style>
-        body { background-color: #fcf4f4; }
-        .booking-card { max-width: 500px; margin: 50px auto; padding: 30px; background: white; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        /* 整體背景與字體顏色 */
+        body {
+            background-color: #F5EEF0; /* 溫柔莫蘭迪淺粉灰底色 */
+            color: #5C4E54; /* 質感深灰粉字體 */
+            font-family: 'Helvetica Neue', '微軟正黑體', Arial, sans-serif;
+        }
+        /* 預約表單的卡片設計 */
+        .container {
+            max-width: 600px;
+        }
+        .booking-card {
+            background: #FFFFFF;
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 8px 24px rgba(174, 139, 150, 0.15);
+            padding: 30px;
+            margin-top: 40px;
+            margin-bottom: 40px;
+        }
+        /* 主標題 */
+        h1, h2, h3 {
+            color: #AE8B96;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        /* 輸入框質感優化 */
+        .form-control, .form-select {
+            border: 1px solid #E0D4D8;
+            border-radius: 12px;
+            padding: 12px;
+            background-color: #FCFAFB;
+            color: #5C4E54;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #C2A3AC;
+            box-shadow: 0 0 0 0.25rem rgba(194, 163, 172, 0.25);
+        }
+        .form-label {
+            font-weight: 600;
+            color: #8A737A;
+            margin-bottom: 8px;
+        }
+        /* 主要按鈕 */
+        .btn-primary {
+            background-color: #C2A3AC;
+            border: none;
+            border-radius: 12px;
+            padding: 14px 20px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: white;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            background-color: #B08E98 !important;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(176, 142, 152, 0.4);
+        }
+        /* 查詢按鈕 */
+        .btn-outline-secondary {
+            border-radius: 12px;
+            border-color: #C2A3AC;
+            color: #C2A3AC;
+            font-weight: bold;
+        }
+        .btn-outline-secondary:hover {
+            background-color: #C2A3AC;
+            color: white;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="booking-card">
-        <h2 class="text-center mb-4" style="color: #d68080;">✨ 預約美甲服務 ✨</h2>
+        <h2>✨ 預約美甲服務 ✨</h2>
         
         <form id="bookingForm">
             <div class="mb-3">
@@ -50,14 +121,12 @@
                 </div>
             </div>
             
-            <button type="submit" class="btn w-100" style="background-color: #d68080; color: white; font-weight: bold;">送出預約</button>
+            <button type="submit" class="btn btn-primary">送出預約</button>
         </form>
-
-        <div id="messageBox" class="mt-3 text-center fw-bold"></div>
     </div>
 
     <div class="booking-card mt-4">
-        <h3 class="text-center mb-3" style="color: #6c757d;">🔍 查詢我的預約</h3>
+        <h3>🔍 查詢我的預約</h3>
         <div class="row g-2 mb-3">
             <div class="col-5">
                 <input type="text" class="form-control" id="searchName" placeholder="您的姓名">
@@ -71,74 +140,116 @@
         </div>
         <div id="searchResults" class="mt-3"></div>
     </div>
-
 </div>
 
-<style>
-    /* 整體背景與字體顏色 */
-    body {
-        background-color: #F5EEF0; /* 溫柔莫蘭迪淺粉灰底色 */
-        color: #5C4E54; /* 質感深灰粉字體，柔和不刺眼 */
-        font-family: 'Helvetica Neue', '微軟正黑體', Arial, sans-serif;
-    }
-    /* 預約表單的卡片設計 */
-    .container {
-        max-width: 600px; /* 讓版面在電腦上看也不會太寬，像手機一樣精緻 */
-    }
-    form, .card {
-        background: #FFFFFF;
-        border: none;
-        border-radius: 20px;
-        box-shadow: 0 8px 24px rgba(174, 139, 150, 0.15); /* 淡淡的莫蘭迪粉陰影 */
-        padding: 30px;
-        margin-top: 40px;
-        margin-bottom: 40px;
-    }
-    /* 主標題 */
-    h1, h2, h3 {
-        color: #AE8B96; /* 莫蘭迪煙燻玫瑰粉 */
-        font-weight: bold;
-        text-align: center;
-        margin-bottom: 25px;
-    }
-    /* 輸入框質感優化 */
-    .form-control, .form-select {
-        border: 1px solid #E0D4D8;
-        border-radius: 12px;
-        padding: 12px;
-        background-color: #FCFAFB;
-        color: #5C4E54;
-    }
-    /* 輸入框點擊時的光暈 */
-    .form-control:focus, .form-select:focus {
-        border-color: #C2A3AC;
-        box-shadow: 0 0 0 0.25rem rgba(194, 163, 172, 0.25);
-    }
-    /* 標籤文字 (姓名、電話等) */
-    .form-label {
-        font-weight: 600;
-        color: #8A737A;
-        margin-bottom: 8px;
-    }
-    /* 主要按鈕 (送出預約) */
-    .btn-primary {
-        background-color: #C2A3AC; /* 主按鈕莫蘭迪粉 */
-        border: none;
-        border-radius: 12px;
-        padding: 14px 20px;
-        font-weight: bold;
-        font-size: 1.1rem;
-        color: white;
-        width: 100%;
-        transition: all 0.3s ease; /* 讓動畫變滑順 */
-    }
-    /* 按鈕滑鼠移過去的互動效果 */
-    .btn-primary:hover {
-        background-color: #B08E98; /* 顏色變深，帶點高級灰調 */
-        transform: translateY(-2px); /* 輕微浮起動畫 */
-        box-shadow: 0 6px 15px rgba(176, 142, 152, 0.4);
-    }
-</style>
+<script>
+    // 這裡是你 Render 的雲端大腦網址！
+    const API_URL = "https://nail-booking-api-bx93.onrender.com";
 
+    // 1. 設定日期只能選擇今天以後
+    const dateInput = document.getElementById('bookingDate');
+    if(dateInput) {
+        const today = new Date();
+        // 確保拿到台灣時間
+        today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
+        dateInput.setAttribute('min', today.toISOString().split('T')[0]);
+    }
+
+    // 2. 自動產生小時與分鐘的選項
+    const hourSelect = document.getElementById("bookingHour");
+    for(let i=10; i<=20; i++){
+        hourSelect.innerHTML += `<option value="${i.toString().padStart(2, '0')}">${i.toString().padStart(2, '0')}</option>`;
+    }
+    const minSelect = document.getElementById("bookingMinute");
+    ["00", "30"].forEach(m => {
+        minSelect.innerHTML += `<option value="${m}">${m}</option>`;
+    });
+
+    // 3. 送出預約的連線功能
+    document.getElementById("bookingForm").addEventListener("submit", async function(e) {
+        e.preventDefault();
+        
+        const date = document.getElementById("bookingDate").value;
+        const hour = document.getElementById("bookingHour").value;
+        const minute = document.getElementById("bookingMinute").value;
+        
+        const payload = {
+            customer_name: document.getElementById("userName").value,
+            phone: document.getElementById("userPhone").value,
+            service_name: document.getElementById("serviceName").value,
+            booking_time: `${date}T${hour}:${minute}:00`
+        };
+
+        try {
+            const response = await fetch(`${API_URL}/bookings/`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+            
+            const data = await response.json();
+            
+            if(response.ok) {
+                // 莫蘭迪粉質感成功彈窗
+                Swal.fire({
+                    title: '預約成功！',
+                    text: '我們已經收到您的預約資訊，期待為您服務 💅',
+                    icon: 'success',
+                    confirmButtonColor: '#C2A3AC',
+                    confirmButtonText: '好的'
+                }).then(() => {
+                    document.getElementById('bookingForm').reset(); // 清空表單
+                });
+            } else {
+                Swal.fire({
+                    title: '預約失敗',
+                    text: data.detail || '這個時段可能被預約了，請換個時間試試！',
+                    icon: 'error',
+                    confirmButtonColor: '#C2A3AC'
+                });
+            }
+        } catch (error) {
+            Swal.fire({
+                title: '系統連線中斷',
+                text: '無法連上伺服器，請稍後再試',
+                icon: 'warning',
+                confirmButtonColor: '#C2A3AC'
+            });
+        }
+    });
+
+    // 4. 查詢預約功能
+    document.getElementById("searchBtn").addEventListener("click", async function() {
+        const phone = document.getElementById("searchPhone").value;
+        if(!phone) {
+            Swal.fire({ icon: 'warning', text: '請輸入電話號碼', confirmButtonColor: '#C2A3AC' });
+            return;
+        }
+        
+        const res = await fetch(`${API_URL}/bookings/${phone}`);
+        const resultsDiv = document.getElementById("searchResults");
+        
+        if(res.ok) {
+            const bookings = await res.json();
+            if(bookings.length === 0) {
+                resultsDiv.innerHTML = "<p class='text-muted text-center'>目前沒有找到您的預約紀錄喔！</p>";
+                return;
+            }
+            
+            let html = "<ul class='list-group'>";
+            bookings.forEach(b => {
+                const dt = new Date(b.booking_time);
+                html += `<li class='list-group-item d-flex justify-content-between align-items-center' style='border-color: #E0D4D8;'>
+                            <span style='color: #5C4E54;'><b>${b.service_name}</b><br><small>${dt.toLocaleString('zh-TW', {month: 'numeric', day: 'numeric', hour: '2-digit', minute:'2-digit'})}</small></span>
+                            <span class='badge' style='background-color: #C2A3AC; font-size: 0.9rem;'>${b.status}</span>
+                         </li>`;
+            });
+            html += "</ul>";
+            resultsDiv.innerHTML = html;
+        } else {
+            resultsDiv.innerHTML = "<p class='text-danger text-center'>查詢失敗，請稍後再試。</p>";
+        }
+    });
+</script>
 </body>
 </html>
