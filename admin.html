@@ -177,26 +177,31 @@
         });
         calendar.render();
     }
-
+// 3. 抓取資料並著色
     async function fetchEvents(fetchInfo, successCallback, failureCallback) {
         try {
             const response = await fetch(`${API_URL}/bookings/`);
             const data = await response.json();
             
             const events = data.map(b => {
-                let startTime = new Date(b.booking_time);
-                let endTime = new Date(startTime.getTime() + 2 * 60 * 60 * 1000);
+                // 💡 關鍵修正：把所有舊標籤換成新標籤 (start_time, user_name, user_phone)
+                const timeString = b.start_time || b.booking_time;
+                const nameString = b.user_name || b.customer_name || "未知客人";
+                const phoneString = b.user_phone || b.phone || "無電話";
+
+                let startTime = new Date(timeString);
+                let endTime = new Date(startTime.getTime() + 2 * 60 * 60 * 1000); // 預設區塊佔 2 小時
                 
                 // 只要姓名裡面有 🔒 符號，就判定為老闆的休假
-                const isBoss = b.customer_name.includes("🔒");
+                const isBoss = nameString.includes("🔒");
                 
                 return {
-                    // 如果是老闆，直接顯示我們剛剛塞在姓名裡的字；如果是客人，加個 💅 符號
-                    title: isBoss ? b.customer_name : `💅 ${b.customer_name}`,
-                    start: b.booking_time,
+                    // 如果是老闆，直接顯示字；如果是客人，加個 💅 符號
+                    title: isBoss ? nameString : `💅 ${nameString}`,
+                    start: timeString, // 讓行事曆知道積木要擺在哪一天
                     end: endTime.toISOString(),
                     color: isBoss ? '#7A7A7A' : '#AE8B96',
-                    extendedProps: { phone: b.phone, service: b.service_name }
+                    extendedProps: { phone: phoneString, service: b.service_name }
                 };
             });
             successCallback(events);
