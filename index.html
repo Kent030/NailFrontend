@@ -30,6 +30,12 @@
         .fc-v-event { border-radius: 6px; padding: 3px; border: none !important; }
         .calendar-hint { font-size: 0.85rem; margin-bottom: 10px; text-align: left; color: #8A737A; }
         .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
+        
+        /* ★ 新增：時段按鈕樣式 */
+        .time-btn { padding: 10px 15px; border: 1px solid #C2A3AC; background-color: white; color: #5C4E54; border-radius: 10px; cursor: pointer; transition: 0.2s; font-size: 0.95rem; text-align: center; white-space: pre-wrap;}
+        .time-btn:hover:not(:disabled) { background-color: #F5EEF0; }
+        .time-btn.selected { background-color: #C2A3AC; color: white; font-weight: bold; box-shadow: 0 4px 10px rgba(194, 163, 172, 0.4); }
+        .time-btn:disabled { border-color: #E0D4D8; background-color: #FCFAFB; color: #BDBDBD; cursor: not-allowed; font-size: 0.85rem;}
     </style>
 </head>
 <body>
@@ -42,7 +48,7 @@
                 <div class="calendar-hint">
                     <span class="dot" style="background-color: #D6C5C9;"></span> 🚫 已被預約 (保護隱私)
                     <span class="dot" style="background-color: #7A7A7A;"></span> 🔒 店休 / 老闆行程
-                    <br><small class="text-muted">💡 密技：直接在行事曆上點擊你想預約的「日期」，右側表格就會自動幫你填好喔！</small>
+                    <br><small class="text-muted">💡 密技：直接在行事曆上點擊你想預約的「日期」，右側會自動列出可預約時段喔！</small>
                 </div>
                 <div id="customerCalendar"></div>
             </div>
@@ -72,18 +78,18 @@
                     <div class="mb-4">
                         <label class="form-label">預約時間</label>
                         <div class="row g-2">
-                            <div class="col-6">
-                                <input type="date" class="form-control" id="bookingDate" required>
+                            <!-- ★ 修改：只要日期，並綁定 onchange 事件 -->
+                            <div class="col-12">
+                                <input type="date" class="form-control" id="bookingDate" required onchange="fetchTimeSlots()">
                             </div>
-                            <div class="col-3">
-                                <select class="form-select" id="bookingHour" required>
-                                    <option value="" disabled selected>時</option>
-                                </select>
-                            </div>
-                            <div class="col-3">
-                                <select class="form-select" id="bookingMinute" required>
-                                    <option value="" disabled selected>分</option>
-                                </select>
+                            <!-- ★ 新增：時段按鈕顯示區塊 -->
+                            <div class="col-12 mt-3">
+                                <label class="form-label" style="font-size: 0.9rem;">選擇時段：</label>
+                                <div id="timeSlotsContainer" class="d-flex flex-wrap gap-2">
+                                    <p class="text-muted mb-0" style="font-size: 0.85rem;">請先選擇上方日期，系統將顯示可預約的時段喔！</p>
+                                </div>
+                                <!-- 隱藏欄位用來存選中的時間 -->
+                                <input type="hidden" id="selectedTime" required>
                             </div>
                         </div>
                     </div>
@@ -117,39 +123,23 @@
     const MY_LIFF_ID = "2010362533-EhsVdHbp"; 
     
     let calendar;
-    let userLineId = null; // 用來悄悄裝載客人 LINE ID 的秘密口袋
+    let userLineId = null;
 
     document.addEventListener("DOMContentLoaded", async function() {
-        const hourSelect = document.getElementById("bookingHour");
-        for(let i = 8; i <= 23; i++){
-            hourSelect.innerHTML += `<option value="${i.toString().padStart(2, '0')}">${i.toString().padStart(2, '0')}</option>`;
-        }
-        const minSelect = document.getElementById("bookingMinute");
-        for(let i = 0; i < 60; i += 5){
-            let m = i.toString().padStart(2, '0');
-            minSelect.innerHTML += `<option value="${m}">${m}</option>`;
-        }
-
         initCustomerCalendar();
 
-        // ✨ 啟動 LIFF 攔截器
         try {
             await liff.init({ liffId: MY_LIFF_ID });
             
             if (liff.isLoggedIn()) {
-                // 如果已經授權過，秒抓客人資料
                 const profile = await liff.getProfile();
                 userLineId = profile.userId;
-                
-                // 貼心小彩蛋：自動把客人的 LINE 暱稱填進姓名欄位！
                 document.getElementById("userName").value = profile.displayName;
             } else {
-                // 如果沒授權過，跳轉到 LINE 登入畫面
                 liff.login();
             }
         } catch (err) {
             console.log("LIFF 初始化失敗或未在 LINE 環境中執行", err);
-            // 即使出錯，也不要阻擋客人繼續網頁操作
         }
     });
 
@@ -158,6 +148,54 @@
         const today = new Date();
         today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
         dateInput.setAttribute('min', today.toISOString().split('T')[0]);
+    }
+
+    // ★ 新增：呼叫後端 API 取得按鈕時段的函數
+    async function fetchTimeSlots() {
+        const dateStr = document.getElementById("bookingDate").value;
+        const container = document.getElementById("timeSlotsContainer");
+        const selectedTimeInput = document.getElementById("selectedTime");
+        
+        if (!dateStr) return;
+        
+        selectedTimeInput.value = ""; // 清空先前的選擇
+        container.innerHTML = "<p class='text-muted mb-0' style='font-size: 0.85rem;'>查詢時段中... ⏳</p>";
+        
+        try {
+            const response = await fetch(`${API_URL}/daily-schedule?date_str=${dateStr}`);
+            const data = await response.json();
+            
+            container.innerHTML = ""; 
+            
+            if (!data.slots || data.slots.length === 0) {
+                container.innerHTML = "<p class='text-muted mb-0' style='font-size: 0.85rem;'>這天沒有開放的時段喔！</p>";
+                return;
+            }
+
+            // 畫出按鈕
+            data.slots.forEach(slot => {
+                const btn = document.createElement("button");
+                btn.type = "button";
+                btn.className = "time-btn flex-fill"; // 讓按鈕平均分配寬度
+                
+                if (slot.status === "可預約") {
+                    btn.innerText = slot.time;
+                    btn.onclick = () => {
+                        document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('selected'));
+                        btn.classList.add('selected');
+                        selectedTimeInput.value = slot.time;
+                    };
+                } else {
+                    btn.innerText = `${slot.time}\n(${slot.reason})`;
+                    btn.disabled = true;
+                }
+                container.appendChild(btn);
+            });
+
+        } catch (error) {
+            console.error("抓取時段失敗:", error);
+            container.innerHTML = "<p class='text-danger mb-0' style='font-size: 0.85rem;'>連線失敗，請稍後再試或聯繫老闆！</p>";
+        }
     }
 
     function initCustomerCalendar() {
@@ -173,6 +211,7 @@
                 const todayStr = new Date().toISOString().split('T')[0];
                 if (clickedDate >= todayStr) {
                     document.getElementById("bookingDate").value = clickedDate;
+                    fetchTimeSlots(); // ★ 連動：點擊日曆自動抓取那天的時段
                 }
             },
             eventClick: function(info) {
@@ -200,7 +239,7 @@
 
                 let startTime = new Date(timeString);
                 let endTime = new Date(startTime.getTime() + 2 * 60 * 60 * 1000); 
-                const isBoss = nameString.includes("🔒") || nameString.includes("休息");
+                const isBoss = nameString.includes("🔒") || nameString.includes("休息") || nameString.includes("老闆");
                 const isAllDay = nameString.includes("整天休息");
 
                 return {
@@ -221,17 +260,15 @@
     document.getElementById("bookingForm").addEventListener("submit", async function(e) {
         e.preventDefault();
         
-        // 🎯【修復關鍵】先把客人選的日期和時間抓出來！
+        // ★ 修改：改為抓取隱藏欄位裡的「所選時段」
         const date = document.getElementById("bookingDate").value;
-        const hour = document.getElementById("bookingHour").value;
-        const minute = document.getElementById("bookingMinute").value;
+        const selectedTime = document.getElementById("selectedTime").value;
 
-        if(!date || !hour || !minute) {
-            Swal.fire({ icon: 'warning', text: '請完整選擇預約日期與時間！', confirmButtonColor: '#C2A3AC' });
+        if(!date || !selectedTime) {
+            Swal.fire({ icon: 'warning', text: '請完整選擇預約日期與「時段按鈕」！', confirmButtonColor: '#C2A3AC' });
             return;
         }
         
-        // 🚨【嚴格模式】檢查有沒有抓到 LINE ID
         if (!userLineId || userLineId === "undefined") {
             Swal.fire({
                 title: '需要 LINE 授權',
@@ -244,41 +281,22 @@
                 cancelButtonText: '返回網頁'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    liff.login(); // 強制重新跳出 LINE 登入授權
+                    liff.login();
                 }
             });
-            return; // 攔截！不開小門，直接中斷不讓後端送出！
+            return; 
         }
-
-        try {
-            const checkRes = await fetch(`${API_URL}/bookings/`);
-            if (checkRes.ok) {
-                const allBookings = await checkRes.json();
-                const isDayOff = allBookings.some(b => {
-                    const name = b.user_name || b.customer_name || "";
-                    const time = b.start_time || b.booking_time || "";
-                    if (!time) return false;
-                    const d = new Date(time);
-                    const localDateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                    return name.includes("🔒 整天休息") && localDateStr === date;
-                });
-                if (isDayOff) {
-                    Swal.fire({ title: '今天不營業喔！', text: '老闆這天排定整天休息，請換個日子試試看！', icon: 'info', confirmButtonColor: '#C2A3AC' });
-                    return; 
-                }
-            }
-        } catch (err) { console.log(err); }
 
         const submitBtn = document.getElementById("submitBtn");
         submitBtn.disabled = true;
         submitBtn.innerText = "⏳ 預約發送中...";
 
-        // ✨ 把抓到的 userLineId 一起裝進包裹裡送給大腦
+        // ★ 修改：組合日期與選定的時間
         const payload = {
             user_name: document.getElementById("userName").value.trim(),
             user_phone: document.getElementById("userPhone").value.trim(),
             service_name: document.getElementById("serviceName").value,
-            start_time: `${date}T${hour}:${minute}:00`,
+            start_time: `${date}T${selectedTime}:00`,
             line_user_id: userLineId  
         };
 
@@ -292,7 +310,8 @@
                 Swal.fire({ title: '預約成功！', text: '期待為您服務 💅', icon: 'success', confirmButtonColor: '#C2A3AC' })
                 .then(() => {
                     document.getElementById('bookingForm').reset();
-                    // 恢復剛剛自動抓到的 LINE 暱稱
+                    document.getElementById('selectedTime').value = ""; // 清空隱藏的時間
+                    document.getElementById('timeSlotsContainer').innerHTML = "<p class='text-muted mb-0' style='font-size: 0.85rem;'>請先選擇上方日期，系統將顯示可預約的時段喔！</p>";
                     if(userLineId) document.getElementById("userName").value = liff.getProfile().displayName;
                     calendar.refetchEvents(); 
                 });
@@ -308,6 +327,7 @@
             submitBtn.innerText = "送出預約";
         }
     });
+
     document.getElementById("searchBtn").addEventListener("click", async function() {
         const name = document.getElementById("searchName").value.trim();
         const phone = document.getElementById("searchPhone").value.trim();
@@ -387,7 +407,7 @@
         }
     };
 </script>
-    <script>
+<script>
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('./sw.js')
