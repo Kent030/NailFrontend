@@ -28,10 +28,9 @@
         #customerCalendar { background: white; padding: 15px; border-radius: 15px; min-height: 500px; font-size: 1em; }
         .fc-header-toolbar h2 { font-size: 1.3rem !important; color: #8A737A !important; margin: 0 !important; }
         
-        /* ★ 核心修正：讓事件文字變小、置中，且絕對不能超出格子 */
         .fc-event {
-            white-space: normal !important; /* 強制換行 */
-            word-break: break-word !important; /* 遇到邊界直接斷行 */
+            white-space: normal !important; 
+            word-break: break-word !important; 
             line-height: 1.2 !important;
             margin-bottom: 2px !important;
             border: none !important;
@@ -42,25 +41,21 @@
             display: block;
         }
         
-        /* 撐開每一天的格子，避免太扁 */
         .fc-daygrid-day-frame { min-height: 80px !important; padding: 2px; }
 
-        /* ★ 手機版終極優化：吃掉多餘白邊、按鈕重排 */
         @media (max-width: 768px) {
-            body { padding: 10px 5px; } /* 把螢幕邊緣的留白縮到最小 */
-            .booking-card { padding: 12px; margin-bottom: 15px; } /* 卡片內距縮小 */
+            body { padding: 10px 5px; } 
+            .booking-card { padding: 12px; margin-bottom: 15px; } 
             #customerCalendar { padding: 5px; min-height: 400px; font-size: 0.9em; }
             .fc-daygrid-day-frame { min-height: 60px !important; }
             .fc-header-toolbar h2 { font-size: 1.1rem !important; }
             .fc-toolbar-chunk { display: flex; gap: 5px; align-items: center; }
-            /* 把多餘的「週、月」按鈕藏起來，節省手機版橫向空間 */
             .fc-timeGridWeek-button, .fc-dayGridMonth-button { display: none !important; }
         }
 
         .calendar-hint { font-size: 0.85rem; margin-bottom: 10px; text-align: left; color: #8A737A; }
         .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
         
-        /* 時段按鈕樣式 */
         .time-btn { padding: 10px 15px; border: 1px solid #C2A3AC; background-color: white; color: #5C4E54; border-radius: 10px; cursor: pointer; transition: 0.2s; font-size: 0.95rem; text-align: center; white-space: pre-wrap;}
         .time-btn:hover:not(:disabled) { background-color: #F5EEF0; }
         .time-btn.selected { background-color: #C2A3AC; color: white; font-weight: bold; box-shadow: 0 4px 10px rgba(194, 163, 172, 0.4); }
@@ -75,8 +70,10 @@
             <div class="booking-card h-100">
                 <h3>📅 本月預約狀態看板</h3>
                 <div class="calendar-hint">
+                    <!-- ★ 加入「可預約」的圖例說明 -->
+                    <span class="dot" style="background-color: #A3C2A3;"></span> ✨ 可預約
                     <span class="dot" style="background-color: #D6C5C9;"></span> 🚫 已預約 
-                    <span class="dot" style="background-color: #7A7A7A;"></span> 🔒 休息/老闆行程
+                    <span class="dot" style="background-color: #7A7A7A;"></span> 🔒 休息/店休
                     <br><small class="text-muted">💡 點擊行事曆上的「日期」，下方就會出現可預約的時段！</small>
                 </div>
                 <div id="customerCalendar"></div>
@@ -225,11 +222,10 @@
         calendar = new FullCalendar.Calendar(calendarEl, {
             initialView: 'dayGridMonth',
             locale: 'zh-tw',
-            // ★ 修改：手機版頂部按鈕精簡化，節省空間
             headerToolbar: { left: 'prev,next', center: 'title', right: 'today' },
             buttonText: { today: '今天' },
             height: 'auto',
-            displayEventTime: false, // ★ 關鍵修改：禁止顯示討厭的「上午10時」！
+            displayEventTime: false, 
             dateClick: function(info) {
                 let clickedDate = info.dateStr.split("T")[0];
                 const todayStr = new Date().toISOString().split('T')[0];
@@ -239,12 +235,27 @@
                 }
             },
             eventClick: function(info) {
-                Swal.fire({
-                    title: info.event.title,
-                    text: info.event.allDay ? "這天排定整天休息不營業喔！" : "此時段已被預約，請選擇其他空檔！",
-                    icon: 'info',
-                    confirmButtonColor: '#C2A3AC'
-                });
+                // ★ 新增互動：點擊綠色「可預約」標籤時，引導客人選日期
+                if (info.event.title.includes("可預約")) {
+                    Swal.fire({
+                        title: '這是可預約空檔！',
+                        text: '系統已自動為您載入日期，請在右方選單直接點擊時段喔！',
+                        icon: 'success',
+                        confirmButtonColor: '#A3C2A3'
+                    });
+                    
+                    let clickedDate = info.event.startStr.split("T")[0];
+                    document.getElementById("bookingDate").value = clickedDate;
+                    fetchTimeSlots(); 
+                    
+                } else {
+                    Swal.fire({
+                        title: info.event.title,
+                        text: info.event.allDay ? "這天排定整天休息不營業喔！" : "此時段已被預約，請選擇其他空檔！",
+                        icon: 'info',
+                        confirmButtonColor: '#C2A3AC'
+                    });
+                }
             },
             events: fetchCustomerEvents
         });
@@ -263,15 +274,30 @@
 
                 let startTime = new Date(timeString);
                 let endTime = new Date(startTime.getTime() + 2 * 60 * 60 * 1000); 
-                const isBoss = nameString.includes("🔒") || nameString.includes("休息") || nameString.includes("老闆") || nameString.includes("店休日");
-                const isAllDay = nameString.includes("整天休息") || nameString.includes("店休日");
+                
+                const isBoss = nameString.includes("🔒") || nameString.includes("休息") || nameString.includes("老闆") || nameString.includes("店休");
+                const isAvailable = nameString.includes("可預約");
+                const isAllDay = nameString.includes("整天休息") || nameString.includes("店休");
+
+                let eventTitle = "🚫 已預約";
+                let eventColor = "#D6C5C9";
+
+                // ★ 給予不同狀態不同的顏色與標題
+                if (isAvailable) {
+                    let hm = startTime.getHours().toString().padStart(2, '0') + ':' + startTime.getMinutes().toString().padStart(2, '0');
+                    eventTitle = `✨ ${hm} 可預約`;
+                    eventColor = "#A3C2A3"; // 綠色
+                } else if (isBoss) {
+                    eventTitle = nameString.replace("🔒 整天休息: ", "🔒 ").replace("🔒 休息: ", "🔒 ");
+                    eventColor = "#7A7A7A";
+                }
 
                 return {
-                    title: isBoss ? nameString.replace("🔒 整天休息: ", "🔒 ").replace("🔒 休息: ", "🔒 ") : "🚫 已預約",
+                    title: eventTitle,
                     start: timeString,
                     end: isAllDay ? null : endTime.toISOString(),
                     allDay: isAllDay,
-                    color: isBoss ? '#7A7A7A' : '#D6C5C9',
+                    color: eventColor,
                     editable: false
                 };
             }).filter(e => e !== null);
