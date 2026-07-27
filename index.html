@@ -313,6 +313,7 @@
             const response = await fetch(`${API_URL}/bookings/`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
+                // 確保這裡是用 JSON.stringify 把物件轉成正確格式傳送
                 body: JSON.stringify(payload)
             });
             if(response.ok) {
