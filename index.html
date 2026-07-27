@@ -91,15 +91,7 @@
                         <label class="form-label">聯絡電話</label>
                         <input type="tel" class="form-control" id="userPhone" required placeholder="例如：0912345678">
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">服務項目</label>
-                        <select class="form-select" id="serviceName">
-                            <option value="單色凝膠">單色凝膠 (90分鐘)</option>
-                            <option value="造型凝膠">造型凝膠 (120分鐘)</option>
-                            <option value="卸甲續作">卸甲續作 (150分鐘)</option>
-                            <option value="純卸甲">純卸甲 (40分鐘)</option>
-                        </select>
-                    </div>
+                    <!-- ★ 這裡已將「服務項目」選單移除 -->
                     <div class="mb-4">
                         <label class="form-label">預約時間</label>
                         <div class="row g-2">
@@ -140,7 +132,7 @@
 
 <script>
     const API_URL = "https://nail-booking-api-bx93.onrender.com";
-    const MY_LIFF_ID = "2010362533-EhsVdHbp"; // 你的 LIFF ID
+    const MY_LIFF_ID = "2010362533-EhsVdHbp"; 
     
     let calendar;
     let userLineId = null;
@@ -234,7 +226,6 @@
                 }
             },
             eventClick: function(info) {
-                // ★ 徹底修正：彈出視窗文案會根據不同狀態改變
                 if (info.event.title.includes("可預約")) {
                     Swal.fire({
                         title: '這是可預約空檔！',
@@ -256,7 +247,7 @@
                     });
                 } else {
                     Swal.fire({
-                        title: info.event.title, // 會顯示「🚫 已被預約」
+                        title: info.event.title, 
                         text: "此時段已被其他客人預約，請選擇其他空檔！",
                         icon: 'warning',
                         confirmButtonColor: '#C2A3AC'
@@ -288,18 +279,16 @@
                 let eventTitle = "🚫 已被預約";
                 let eventColor = "#D6C5C9";
 
-                // ★ 給予清楚的狀態區分，杜絕模糊地帶
                 if (isAvailable) {
                     let hm = startTime.getHours().toString().padStart(2, '0') + ':' + startTime.getMinutes().toString().padStart(2, '0');
                     eventTitle = `✨ ${hm} 可預約`;
-                    eventColor = "#A3C2A3"; // 綠色
+                    eventColor = "#A3C2A3"; 
                 } else if (isBoss) {
                     eventTitle = nameString.includes("🔒") ? nameString : `🔒 ${nameString}`;
-                    eventColor = "#7A7A7A"; // 深灰色
+                    eventColor = "#7A7A7A"; 
                 } else {
-                    // 若不是老闆休息也不是開放時段，統一乾淨顯示「已被預約」
                     eventTitle = "🚫 已被預約";
-                    eventColor = "#D6C5C9"; // 粉灰色
+                    eventColor = "#D6C5C9"; 
                 }
 
                 return {
@@ -317,7 +306,6 @@
         }
     }
 
-    // (後面表單發送與查詢的邏輯維持不變)
     document.getElementById("bookingForm").addEventListener("submit", async function(e) {
         e.preventDefault();
         
@@ -354,7 +342,7 @@
         const payload = {
             user_name: document.getElementById("userName").value.trim(),
             user_phone: document.getElementById("userPhone").value.trim(),
-            service_name: document.getElementById("serviceName").value,
+            // ★ 將 service_name 欄位從傳送資料中拔除
             start_time: `${date}T${selectedTime}:00`,
             line_user_id: userLineId  
         };
@@ -421,7 +409,8 @@
                     const bookingId = b.id || b._id || "";
 
                     html += `<li class='list-group-item d-flex justify-content-between align-items-center' style='border-color: #E0D4D8;'>
-                                <div style='color: #5C4E54; text-align: left;'><b>${b.service_name}</b><br><small>${displayTime}</small></div>
+                                <!-- ★ 查詢清單中固定顯示 '美甲預約' -->
+                                <div style='color: #5C4E54; text-align: left;'><b>${b.service_name || '美甲預約'}</b><br><small>${displayTime}</small></div>
                                 <div>
                                     <span class='badge me-2' style='background-color: #C2A3AC; font-size: 0.9rem;'>${b.status || '已確認'}</span>
                                     ${bookingId ? `<button class="btn btn-sm btn-outline-danger" onclick="cancelBooking('${bookingId}')">取消</button>` : ''}
