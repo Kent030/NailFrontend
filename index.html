@@ -84,7 +84,6 @@
                 <form id="bookingForm">
                     <div class="mb-3">
                         <label class="form-label">您的姓名</label>
-                        <!-- 客人直接手動輸入姓名 -->
                         <input type="text" class="form-control" id="userName" required placeholder="例如：王小明">
                     </div>
                     <div class="mb-3">
@@ -243,7 +242,8 @@
 
     async function fetchCustomerEvents(fetchInfo, successCallback, failureCallback) {
         try {
-            const response = await fetch(`${API_URL}/bookings/`);
+            // 🐛 在這裡拿掉網址結尾的斜線
+            const response = await fetch(`${API_URL}/bookings`);
             const data = await response.json();
             
             const events = data.map(b => {
@@ -303,19 +303,23 @@
         submitBtn.disabled = true;
         submitBtn.innerText = "⏳ 預約發送中...";
 
-        const payload = {
+        const rawData = {
             user_name: document.getElementById("userName").value.trim(),
             user_phone: document.getElementById("userPhone").value.trim(),
             start_time: `${date}T${selectedTime}:00`
         };
 
         try {
-            const response = await fetch(`${API_URL}/bookings/`, {
+            // 🐛 在這裡拿掉網址結尾的斜線
+            const response = await fetch(`${API_URL}/bookings`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                // 確保這裡是用 JSON.stringify 把物件轉成正確格式傳送
-                body: JSON.stringify(payload)
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
+                },
+                body: JSON.stringify(rawData)
             });
+            
             if(response.ok) {
                 Swal.fire({ title: '預約成功！', text: '期待為您服務 💅', icon: 'success', confirmButtonColor: '#C2A3AC' })
                 .then(() => {
@@ -349,7 +353,8 @@
         resultsDiv.innerHTML = "<p class='text-muted text-center'>🔍 查詢中...</p>";
 
         try {
-            const res = await fetch(`${API_URL}/bookings/`);
+            // 🐛 在這裡拿掉網址結尾的斜線
+            const res = await fetch(`${API_URL}/bookings`);
             if(res.ok) {
                 const allBookings = await res.json();
                 const myBookings = allBookings.filter(b => 
