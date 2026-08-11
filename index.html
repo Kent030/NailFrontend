@@ -59,6 +59,11 @@
         .time-btn:hover:not(:disabled) { background-color: #F5EEF0; }
         .time-btn.selected { background-color: #C2A3AC; color: white; font-weight: bold; box-shadow: 0 4px 10px rgba(194, 163, 172, 0.4); }
         .time-btn:disabled { border-color: #E0D4D8; background-color: #FCFAFB; color: #BDBDBD; cursor: not-allowed; font-size: 0.85rem;}
+        
+        /* 匯款資訊框樣式 */
+        .bank-info-box { background-color: #FCFAFB; border: 1px dashed #C2A3AC; border-radius: 12px; padding: 15px; font-size: 0.9rem; color: #5C4E54; margin-bottom: 15px; }
+        .bank-info-title { font-weight: bold; color: #AE8B96; margin-bottom: 8px; font-size: 1rem;}
+        .warning-text { color: #d9534f; font-weight: bold; font-size: 0.85rem; margin-top: 10px;}
     </style>
 </head>
 <body>
@@ -90,6 +95,17 @@
                         <label class="form-label">聯絡電話</label>
                         <input type="tel" class="form-control" id="userPhone" required placeholder="例如：0912345678">
                     </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">預約部位</label>
+                        <select class="form-select" id="serviceType" required>
+                            <option value="" disabled selected>請選擇您要預約的部位</option>
+                            <option value="手部">💅 手部</option>
+                            <option value="足部">🦶 足部</option>
+                            <option value="手部+足部">💅🦶 手部 + 足部</option>
+                        </select>
+                    </div>
+
                     <div class="mb-4">
                         <label class="form-label">預約時間</label>
                         <div class="row g-2">
@@ -105,6 +121,20 @@
                             </div>
                         </div>
                     </div>
+
+                    <div class="mb-4">
+                        <div class="bank-info-box">
+                            <div class="bank-info-title">💰 訂金匯款資訊</div>
+                            台新銀行（812）<br>
+                            帳號：2888-1006-8475-40<br><br>
+                            🔸 預約延長訂金：$1000<br>
+                            🔸 預約本甲訂金：$500<br>
+                            <div class="warning-text">⚠️ 預約一週內請匯款後通知。請於下方填寫帳號末5碼，或後續截圖通知老闆。</div>
+                        </div>
+                        <label class="form-label">匯款後5碼 (若尚未匯款可填寫"稍後")</label>
+                        <input type="text" class="form-control" id="remittanceLast5" required placeholder="例如：12345">
+                    </div>
+
                     <button type="submit" class="btn btn-primary" id="submitBtn">送出預約</button>
                 </form>
             </div>
@@ -143,7 +173,6 @@
         dateInput.setAttribute('min', today.toISOString().split('T')[0]);
     }
 
-    // 🌟 修改：加入 autoSelectTime 參數，讓系統知道要自動點擊哪個時間
     async function fetchTimeSlots(autoSelectTime = null) {
         const dateStr = document.getElementById("bookingDate").value;
         const container = document.getElementById("timeSlotsContainer");
@@ -178,7 +207,6 @@
                         selectedTimeInput.value = slot.time;
                     };
                     
-                    // 🌟 自動點擊判斷：如果這個按鈕的時間跟我們想自動選擇的時間一樣，就模擬點擊它
                     if (typeof autoSelectTime === 'string' && slot.time === autoSelectTime) {
                         setTimeout(() => btn.click(), 50); 
                     }
@@ -216,18 +244,13 @@
             eventClick: function(info) {
                 if (info.event.title.includes("可預約")) {
                     
-                    // 🌟 自動提取事件的「日期」與「時間」
                     let startDate = info.event.start;
                     let clickedDate = info.event.startStr.split("T")[0];
                     let clickedTime = startDate.getHours().toString().padStart(2, '0') + ':' + startDate.getMinutes().toString().padStart(2, '0');
 
-                    // 自動填寫日期
                     document.getElementById("bookingDate").value = clickedDate;
-                    
-                    // 觸發抓取時段，並告訴它要自動選取 clickedTime
                     fetchTimeSlots(clickedTime); 
                     
-                    // 🌟 貼心功能：自動把網頁往下滑動到表單的位置 (手機版極度滑順)
                     document.getElementById("bookingForm").scrollIntoView({ behavior: 'smooth', block: 'center' });
 
                     Swal.fire({
@@ -236,7 +259,7 @@
                         icon: 'success',
                         confirmButtonColor: '#A3C2A3',
                         timer: 3000,
-                        showConfirmButton: false // 設定自動關閉，客人不用再多按一次 OK
+                        showConfirmButton: false 
                     });
                     
                 } else if (info.event.title.includes("休息") || info.event.title.includes("店休")) {
@@ -325,6 +348,8 @@
         const rawData = {
             user_name: document.getElementById("userName").value.trim(),
             user_phone: document.getElementById("userPhone").value.trim(),
+            service_type: document.getElementById("serviceType").value,
+            remittance_last_5: document.getElementById("remittanceLast5").value.trim(),
             start_time: `${date}T${selectedTime}:00`
         };
 
@@ -339,7 +364,7 @@
             });
             
             if(response.ok) {
-                Swal.fire({ title: '預約成功！', text: '期待為您服務 💅', icon: 'success', confirmButtonColor: '#C2A3AC' })
+                Swal.fire({ title: '預約成功！', text: '記得於一週內匯款訂金喔 💅', icon: 'success', confirmButtonColor: '#C2A3AC' })
                 .then(() => {
                     document.getElementById('bookingForm').reset();
                     document.getElementById('selectedTime').value = ""; 
@@ -391,9 +416,14 @@
                     const dt = new Date(timeString);
                     const displayTime = isNaN(dt.getTime()) ? "時間格式有誤" : dt.toLocaleString('zh-TW', {month: 'numeric', day: 'numeric', hour: '2-digit', minute:'2-digit'});
                     const bookingId = b.id || b._id || "";
+                    
+                    let details = [];
+                    if(b.service_type) details.push(`部位：${b.service_type}`);
+                    if(b.remittance_last_5) details.push(`後5碼：${b.remittance_last_5}`);
+                    let extraInfo = details.length > 0 ? `<br><small style="color: #8A737A;">${details.join(' | ')}</small>` : '';
 
                     html += `<li class='list-group-item d-flex justify-content-between align-items-center' style='border-color: #E0D4D8;'>
-                                <div style='color: #5C4E54; text-align: left;'><b>${b.service_name || '美甲預約'}</b><br><small>${displayTime}</small></div>
+                                <div style='color: #5C4E54; text-align: left;'><b>${b.service_name || '美甲預約'}</b><br><small>${displayTime}</small>${extraInfo}</div>
                                 <div>
                                     <span class='badge me-2' style='background-color: #C2A3AC; font-size: 0.9rem;'>${b.status || '已確認'}</span>
                                     ${bookingId ? `<button class="btn btn-sm btn-outline-danger" onclick="cancelBooking('${bookingId}')">取消</button>` : ''}
