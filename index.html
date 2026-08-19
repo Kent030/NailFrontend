@@ -60,7 +60,6 @@
         .time-btn.selected { background-color: #C2A3AC; color: white; font-weight: bold; box-shadow: 0 4px 10px rgba(194, 163, 172, 0.4); }
         .time-btn:disabled { border-color: #E0D4D8; background-color: #FCFAFB; color: #BDBDBD; cursor: not-allowed; font-size: 0.85rem;}
         
-        /* 匯款資訊框樣式 */
         .bank-info-box { background-color: #FCFAFB; border: 1px dashed #C2A3AC; border-radius: 12px; padding: 15px; font-size: 0.9rem; color: #5C4E54; margin-bottom: 15px; }
         .bank-info-title { font-weight: bold; color: #AE8B96; margin-bottom: 8px; font-size: 1rem;}
         .warning-text { color: #d9534f; font-weight: bold; font-size: 0.85rem; margin-top: 10px;}
@@ -78,6 +77,7 @@
                     <span class="dot" style="background-color: #D6C5C9;"></span> 🚫 已被預約 
                     <span class="dot" style="background-color: #7A7A7A;"></span> 🔒 休息/店休
                     <br><small class="text-muted">💡 點擊行事曆上的「時段」，系統會為您自動帶入日期與時間喔！</small>
+                    <br><small id="monthLimitText" style="color: #d9534f; font-weight: bold; margin-top: 5px; display: inline-block;"></small>
                 </div>
                 <div id="customerCalendar"></div>
             </div>
@@ -164,6 +164,14 @@
 
     document.addEventListener("DOMContentLoaded", function() {
         initCustomerCalendar();
+        
+        const now = new Date();
+        let maxMonth = now.getMonth() + 2; 
+        if (maxMonth > 12) maxMonth -= 12;
+        const limitText = document.getElementById("monthLimitText");
+        if(limitText) {
+            limitText.innerHTML = `⚠️ 一般客人目前僅開放預約至 <b>${maxMonth}月底</b>，VIP 熟客無此限制！`;
+        }
     });
 
     const dateInput = document.getElementById('bookingDate');
