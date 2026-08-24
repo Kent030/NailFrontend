@@ -33,7 +33,6 @@
 <div class="container" id="mainContent">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="mb-0">👑 VIP 熟客名單管理</h2>
-        <!-- ★ 一鍵同步按鈕 -->
         <button class="btn btn-sync" onclick="syncVips()">✨ 自動同步日曆</button>
     </div>
     
@@ -42,17 +41,17 @@
             <h5 class="card-title" style="color: #8A737A;">新增全新 VIP 客戶</h5>
             <div class="row g-2">
                 <div class="col-md-5">
-                    <input type="text" id="newName" class="form-control" placeholder="客戶姓名">
+                    <input type="text" id="newName" class="form-control" placeholder="客戶姓名 (必填)">
                 </div>
                 <div class="col-md-5">
-                    <!-- ★ 工程師自己測試：可以在這裡輸入你的電話 -->
-                    <input type="tel" id="newPhone" class="form-control" placeholder="聯絡電話">
+                    <!-- ★ 電話變成選填 -->
+                    <input type="tel" id="newPhone" class="form-control" placeholder="聯絡電話 (可空白，等客人自己補)">
                 </div>
                 <div class="col-md-2">
                     <button class="btn btn-primary w-100" onclick="addVip()">新增</button>
                 </div>
             </div>
-            <small class="text-muted mt-2 d-block">💡 你可以在這裡手動加入工程師自己的號碼來測試 VIP 功能喔！</small>
+            <small class="text-muted mt-2 d-block">💡 電話可以不填！只要名字對上，客人下次預約時系統會自動幫他把電話補進資料庫！</small>
         </div>
     </div>
 
@@ -126,10 +125,11 @@
             tbody.innerHTML += `
                 <tr>
                     <td><b>${vip.user_name}</b></td>
-                    <td>${vip.user_phone}</td>
+                    <td style="color: ${vip.user_phone === '尚未提供電話' ? '#d9534f' : '#5C4E54'}">${vip.user_phone}</td>
                     <td><span class="badge-vip">👑 VIP</span></td>
                     <td>
-                        <button class="btn btn-sm btn-outline-danger" onclick="deleteVip('${vip.user_phone}')">移除</button>
+                        <!-- ★ 統一用乾淨名字刪除 -->
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteVip('${vip.user_name}')">移除</button>
                     </td>
                 </tr>
             `;
@@ -140,8 +140,8 @@
         const name = document.getElementById("newName").value.trim();
         const phone = document.getElementById("newPhone").value.trim();
         
-        if (!name || !phone) {
-            Swal.fire("提示", "請完整填寫姓名與電話喔！", "warning");
+        if (!name) {
+            Swal.fire("提示", "一定要填寫客人姓名喔！", "warning");
             return;
         }
 
@@ -149,11 +149,12 @@
             const res = await fetch(`${API_URL}/api/vips?pwd=${currentPwd}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ user_name: name, user_phone: phone })
+                body: JSON.stringify({ user_name: name, user_phone: phone || null }) // ★ 沒有的話傳 null
             });
 
             if (res.ok) {
-                Swal.fire("成功", "已加入 VIP 名單！", "success");
+                const data = await res.json();
+                Swal.fire("成功", data.message, "success");
                 document.getElementById("newName").value = "";
                 document.getElementById("newPhone").value = "";
                 loadVips(); 
@@ -166,11 +167,13 @@
         }
     }
 
-    async function deleteVip(phone) {
-        if (!confirm("確定要移除這位客人的 VIP 資格嗎？")) return;
+    async function deleteVip(name) {
+        if (!confirm(`確定要移除 ${name} 的 VIP 資格嗎？`)) return;
         
         try {
-            const res = await fetch(`${API_URL}/api/vips/${phone}?pwd=${currentPwd}`, {
+            // ★ 用名字刪除
+            const encodedName = encodeURIComponent(name);
+            const res = await fetch(`${API_URL}/api/vips/${encodedName}?pwd=${currentPwd}`, {
                 method: "DELETE"
             });
 
@@ -185,7 +188,6 @@
         }
     }
 
-    // ★ 呼叫後端執行 Google 日曆大掃描
     async function syncVips() {
         Swal.fire({
             title: '正在掃描 Google 日曆...',
@@ -200,7 +202,7 @@
             
             if (res.ok) {
                 Swal.fire("同步完成！", data.message, "success");
-                loadVips(); // 重抓最新名單
+                loadVips(); 
             } else {
                 Swal.fire("同步失敗", data.detail, "error");
             }
