@@ -12,27 +12,30 @@
         h2 { color: #AE8B96; font-weight: bold; text-align: center; margin-bottom: 20px; }
         .btn-primary { background-color: #C2A3AC; border: none; }
         .btn-primary:hover { background-color: #B08E98; }
+        .btn-sync { background-color: #8A737A; color: white; font-weight: bold; }
+        .btn-sync:hover { background-color: #5C4E54; color: white; }
         table { margin-top: 20px; }
         th { background-color: #FCFAFB !important; color: #AE8B96 !important; }
         .badge-vip { background-color: #A3C2A3; color: white; padding: 5px 10px; border-radius: 12px; font-size: 0.85rem;}
         
-        /* 登入畫面樣式 */
         #loginSection { max-width: 400px; margin: 100px auto; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 8px 24px rgba(174, 139, 150, 0.15); text-align: center;}
-        #mainContent { display: none; } /* 一開始隱藏主要內容 */
+        #mainContent { display: none; }
     </style>
 </head>
 <body>
 
-<!-- 登入畫面 -->
 <div id="loginSection">
     <h3 style="color: #AE8B96; font-weight: bold; margin-bottom: 20px;">🔒 老闆專屬後台</h3>
     <input type="password" id="bossPwd" class="form-control mb-3" placeholder="請輸入密碼">
     <button class="btn btn-primary w-100" onclick="login()">登入</button>
 </div>
 
-<!-- 主要內容 (登入後才會顯示) -->
 <div class="container" id="mainContent">
-    <h2>👑 VIP 熟客名單管理</h2>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">👑 VIP 熟客名單管理</h2>
+        <!-- ★ 一鍵同步按鈕 -->
+        <button class="btn btn-sync" onclick="syncVips()">✨ 自動同步日曆</button>
+    </div>
     
     <div class="card mb-4" style="border-color: #E0D4D8;">
         <div class="card-body">
@@ -42,13 +45,14 @@
                     <input type="text" id="newName" class="form-control" placeholder="客戶姓名">
                 </div>
                 <div class="col-md-5">
+                    <!-- ★ 工程師自己測試：可以在這裡輸入你的電話 -->
                     <input type="tel" id="newPhone" class="form-control" placeholder="聯絡電話">
                 </div>
                 <div class="col-md-2">
                     <button class="btn btn-primary w-100" onclick="addVip()">新增</button>
                 </div>
             </div>
-            <small class="text-muted mt-2 d-block">💡 系統也會在客人預約時，自動去日曆尋找有標記「V」的舊客並自動加進來喔！</small>
+            <small class="text-muted mt-2 d-block">💡 你可以在這裡手動加入工程師自己的號碼來測試 VIP 功能喔！</small>
         </div>
     </div>
 
@@ -73,27 +77,20 @@
     const API_URL = "https://nail-booking-api-bx93.onrender.com";
     let currentPwd = "";
 
-    // 按下 Enter 也可以登入
     document.getElementById("bossPwd").addEventListener("keypress", function(event) {
-        if (event.key === "Enter") {
-            login();
-        }
+        if (event.key === "Enter") login();
     });
 
     async function login() {
         const pwd = document.getElementById("bossPwd").value;
         if (!pwd) return;
 
-        // 嘗試用密碼抓取名單
         try {
             const res = await fetch(`${API_URL}/api/vips?pwd=${pwd}`);
             if (res.ok) {
-                // 密碼正確！
                 currentPwd = pwd;
                 document.getElementById("loginSection").style.display = "none";
                 document.getElementById("mainContent").style.display = "block";
-                
-                // 把剛抓到的名單畫出來
                 const vips = await res.json();
                 renderVipList(vips);
             } else {
@@ -121,7 +118,7 @@
         tbody.innerHTML = "";
         
         if(vips.length === 0) {
-            tbody.innerHTML = "<tr><td colspan='4' class='text-muted'>目前尚無名單，等待客人預約自動建檔中...</td></tr>";
+            tbody.innerHTML = "<tr><td colspan='4' class='text-muted'>目前尚無名單，可點擊上方「自動同步日曆」載入舊客。</td></tr>";
             return;
         }
 
@@ -159,7 +156,7 @@
                 Swal.fire("成功", "已加入 VIP 名單！", "success");
                 document.getElementById("newName").value = "";
                 document.getElementById("newPhone").value = "";
-                loadVips(); // 重新載入名單
+                loadVips(); 
             } else {
                 const data = await res.json();
                 Swal.fire("失敗", data.detail, "error");
@@ -179,12 +176,36 @@
 
             if (res.ok) {
                 Swal.fire("已移除", "該客人已降為一般客人", "success");
-                loadVips(); // 重新載入名單
+                loadVips();
             } else {
                 Swal.fire("失敗", "移除失敗", "error");
             }
         } catch (e) {
             Swal.fire("錯誤", "無法連上伺服器", "error");
+        }
+    }
+
+    // ★ 呼叫後端執行 Google 日曆大掃描
+    async function syncVips() {
+        Swal.fire({
+            title: '正在掃描 Google 日曆...',
+            text: '這可能需要幾十秒鐘，請耐心等候',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+        });
+
+        try {
+            const res = await fetch(`${API_URL}/api/sync-vips?pwd=${currentPwd}`, { method: "POST" });
+            const data = await res.json();
+            
+            if (res.ok) {
+                Swal.fire("同步完成！", data.message, "success");
+                loadVips(); // 重抓最新名單
+            } else {
+                Swal.fire("同步失敗", data.detail, "error");
+            }
+        } catch (e) {
+            Swal.fire("錯誤", "無法連線至伺服器", "error");
         }
     }
 </script>
