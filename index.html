@@ -170,7 +170,6 @@
     const maxDayStr = String(nextMonthEnd.getDate()).padStart(2, '0');
     const normalMaxDateStr = `${maxYearStr}-${maxMonthStr}-${maxDayStr}`;
     
-    // 一般客人的行事曆極限範圍 (隔天下個月底的 00:00)
     const fcEnd = new Date(currentYear, currentMonth + 2, 1);
     const fcEndStr = `${fcEnd.getFullYear()}-${String(fcEnd.getMonth() + 1).padStart(2, '0')}-01`;
 
@@ -186,22 +185,24 @@
         initCustomerCalendar();
         
         const phoneInput = document.getElementById('userPhone');
+        const nameInput = document.getElementById('userName'); 
+
         phoneInput.addEventListener('input', async function() {
             const phone = this.value.trim();
+            const name = nameInput.value.trim(); 
+
             if (phone.length === 10 && !isVipUnlocked) {
                 try {
-                    const res = await fetch(`${API_URL}/check-vip/${phone}`);
+                    const encodedName = encodeURIComponent(name || "VIP客戶");
+                    const res = await fetch(`${API_URL}/check-vip/${phone}?name=${encodedName}`);
                     const data = await res.json();
                     
                     if (data.is_vip) {
                         isVipUnlocked = true;
                         
-                        // 1. 解除日期選單的限制
                         document.getElementById('bookingDate').removeAttribute('max');
-                        
-                        // 2. ★ 解除行事曆的限制，並強制重新渲染，突破月份卡關！
                         calendar.setOption('validRange', null);
-                        calendar.render(); // 強制重繪
+                        calendar.render(); 
                         
                         Swal.fire({
                             title: 'VIP 專屬通道已解鎖 👑',
