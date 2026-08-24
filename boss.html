@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>老闆專屬 - VIP 管理後台</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body { background-color: #F5EEF0; color: #5C4E54; font-family: '微軟正黑體', sans-serif; padding: 20px 10px; display: none; }
+        .container { max-width: 800px; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 8px 24px rgba(174, 139, 150, 0.15); }
+        h2 { color: #AE8B96; font-weight: bold; text-align: center; margin-bottom: 20px; }
+        .btn-primary { background-color: #C2A3AC; border: none; }
+        .btn-primary:hover { background-color: #B08E98; }
+        table { margin-top: 20px; }
+        th { background-color: #FCFAFB !important; color: #AE8B96 !important; }
+        .badge-vip { background-color: #A3C2A3; color: white; padding: 5px 10px; border-radius: 12px; font-size: 0.85rem;}
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>👑 VIP 熟客名單管理</h2>
+    
+    <div class="card mb-4" style="border-color: #E0D4D8;">
+        <div class="card-body">
+            <h5 class="card-title" style="color: #8A737A;">新增全新 VIP 客戶</h5>
+            <div class="row g-2">
+                <div class="col-md-5">
+                    <input type="text" id="newName" class="form-control" placeholder="客戶姓名">
+                </div>
+                <div class="col-md-5">
+                    <input type="tel" id="newPhone" class="form-control" placeholder="聯絡電話">
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-primary w-100" onclick="addVip()">新增</button>
+                </div>
+            </div>
+            <small class="text-muted mt-2 d-block">💡 系統也會在客人預約時，自動去日曆尋找有標記「V」的舊客並自動加進來喔！</small>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle text-center">
+            <thead>
+                <tr>
+                    <th>姓名</th>
+                    <th>聯絡電話</th>
+                    <th>狀態</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="vipList">
+                <!-- 資料會載入在這裡 -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    const API_URL = "https://nail-booking-api-bx93.onrender.com";
+    let BOSS_PWD = "";
+
+    // 網頁載入時，先鎖定畫面要求密碼
+    window.onload = async () => {
+        const { value: password } = await Swal.fire({
+            title: '請輸入老闆專屬密碼',
+            input: 'password',
+            inputPlaceholder: '輸入密碼',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            confirmButtonColor: '#C2A3AC'
+        });
+
+        if (password) {
+            BOSS_PWD = password;
+            loadVips();
+        }
+    };
+
+    // 載入 VIP 名單
+    async function loadVips() {
+        try {
+            const res = await fetch(`${API_URL}/api/vips?pwd=${BOSS_PWD}`);
+            if (!res.ok) {
+                Swal.fire("錯誤", "密碼錯誤或連線失敗", "error").then(() => location.reload());
+                return;
+            }
+            document.body.style.display = "block"; // 密碼正確才顯示畫面
+            const vips = await res.json();
+            const tbody = document.getElementById("vipList");
+            tbody.innerHTML = "";
+            
+            if(vips.length === 0) {
+                tbody.innerHTML = "<tr><td colspan='4' class='text-muted'>目前尚無名單，等待客人預約自動建檔中...</td></tr>";
+                return;
+            }
+
+            vips.forEach(vip => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td><b>${vip.user_name}</b></td>
+                        <td>${vip.user_phone}</td>
+                        <td><span class="badge-vip">👑 VIP</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteVip('${vip.user_phone}')">移除資格</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        } catch (e) {
+            Swal.fire("錯誤", "無法連上伺服器", "error");
+        }
+    }
+
+    // 新增 VIP
+    async function addVip() {
+        const name = document.getElementById("newName").value.trim();
+        const phone = document.getElementById("newPhone").value.trim();
+        
+        if (!name || !phone) {
+            Swal.fire("提示", "請完整填寫姓名與電話喔！", "warning");
+            return;
+        }
+
+        try {
+            const res = await fetch(`${API_URL}/api/vips?pwd=${BOSS_PWD}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ user_name: name, user_phone: phone })
+            });
+
+            if (res.ok) {
+                Swal.fire("成功", "已加入 VIP 名單！", "success");
+                document.getElementById("newName").value = "";
+                document.getElementById("newPhone").value = "";
+                loadVips();
+            } else {
+                const data = await res.json();
+                Swal.fire("失敗", data.detail, "error");
+            }
+        } catch (e) {
+            Swal.fire("錯誤", "無法連上伺服器", "error");
+        }
+    }
+
+    // 刪除 VIP
+    async function deleteVip(phone) {
+        if (!confirm("確定要移除這位客人的 VIP 資格嗎？")) return;
+        
+        try {
+            const res = await fetch(`${API_URL}/api/vips/${phone}?pwd=${BOSS_PWD}`, {
+                method: "DELETE"
+            });
+
+            if (res.ok) {
+                Swal.fire("已移除", "該客人已降為一般客人", "success");
+                loadVips();
+            } else {
+                Swal.fire("失敗", "移除失敗", "error");
+            }
+        } catch (e) {
+            Swal.fire("錯誤", "無法連上伺服器", "error");
+        }
+    }
+</script>
+</body>
+</html>
