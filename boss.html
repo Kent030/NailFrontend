@@ -7,7 +7,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        body { background-color: #F5EEF0; color: #5C4E54; font-family: '微軟正黑體', sans-serif; padding: 20px 10px; display: none; }
+        body { background-color: #F5EEF0; color: #5C4E54; font-family: '微軟正黑體', sans-serif; padding: 20px 10px; }
         .container { max-width: 800px; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 8px 24px rgba(174, 139, 150, 0.15); }
         h2 { color: #AE8B96; font-weight: bold; text-align: center; margin-bottom: 20px; }
         .btn-primary { background-color: #C2A3AC; border: none; }
@@ -15,11 +15,23 @@
         table { margin-top: 20px; }
         th { background-color: #FCFAFB !important; color: #AE8B96 !important; }
         .badge-vip { background-color: #A3C2A3; color: white; padding: 5px 10px; border-radius: 12px; font-size: 0.85rem;}
+        
+        /* 登入畫面樣式 */
+        #loginSection { max-width: 400px; margin: 100px auto; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 8px 24px rgba(174, 139, 150, 0.15); text-align: center;}
+        #mainContent { display: none; } /* 一開始隱藏主要內容 */
     </style>
 </head>
 <body>
 
-<div class="container">
+<!-- 登入畫面 -->
+<div id="loginSection">
+    <h3 style="color: #AE8B96; font-weight: bold; margin-bottom: 20px;">🔒 老闆專屬後台</h3>
+    <input type="password" id="bossPwd" class="form-control mb-3" placeholder="請輸入密碼">
+    <button class="btn btn-primary w-100" onclick="login()">登入</button>
+</div>
+
+<!-- 主要內容 (登入後才會顯示) -->
+<div class="container" id="mainContent">
     <h2>👑 VIP 熟客名單管理</h2>
     
     <div class="card mb-4" style="border-color: #E0D4D8;">
@@ -59,61 +71,74 @@
 
 <script>
     const API_URL = "https://nail-booking-api-bx93.onrender.com";
-    let BOSS_PWD = "";
+    let currentPwd = "";
 
-    // 網頁載入時，先鎖定畫面要求密碼
-    window.onload = async () => {
-        const { value: password } = await Swal.fire({
-            title: '請輸入老闆專屬密碼',
-            input: 'password',
-            inputPlaceholder: '輸入密碼',
-            allowOutsideClick: false,
-            allowEscapeKey: false,
-            confirmButtonColor: '#C2A3AC'
-        });
-
-        if (password) {
-            BOSS_PWD = password;
-            loadVips();
+    // 按下 Enter 也可以登入
+    document.getElementById("bossPwd").addEventListener("keypress", function(event) {
+        if (event.key === "Enter") {
+            login();
         }
-    };
+    });
 
-    // 載入 VIP 名單
-    async function loadVips() {
+    async function login() {
+        const pwd = document.getElementById("bossPwd").value;
+        if (!pwd) return;
+
+        // 嘗試用密碼抓取名單
         try {
-            const res = await fetch(`${API_URL}/api/vips?pwd=${BOSS_PWD}`);
-            if (!res.ok) {
-                Swal.fire("錯誤", "密碼錯誤或連線失敗", "error").then(() => location.reload());
-                return;
+            const res = await fetch(`${API_URL}/api/vips?pwd=${pwd}`);
+            if (res.ok) {
+                // 密碼正確！
+                currentPwd = pwd;
+                document.getElementById("loginSection").style.display = "none";
+                document.getElementById("mainContent").style.display = "block";
+                
+                // 把剛抓到的名單畫出來
+                const vips = await res.json();
+                renderVipList(vips);
+            } else {
+                Swal.fire("錯誤", "密碼錯誤！", "error");
             }
-            document.body.style.display = "block"; // 密碼正確才顯示畫面
-            const vips = await res.json();
-            const tbody = document.getElementById("vipList");
-            tbody.innerHTML = "";
-            
-            if(vips.length === 0) {
-                tbody.innerHTML = "<tr><td colspan='4' class='text-muted'>目前尚無名單，等待客人預約自動建檔中...</td></tr>";
-                return;
-            }
-
-            vips.forEach(vip => {
-                tbody.innerHTML += `
-                    <tr>
-                        <td><b>${vip.user_name}</b></td>
-                        <td>${vip.user_phone}</td>
-                        <td><span class="badge-vip">👑 VIP</span></td>
-                        <td>
-                            <button class="btn btn-sm btn-outline-danger" onclick="deleteVip('${vip.user_phone}')">移除資格</button>
-                        </td>
-                    </tr>
-                `;
-            });
         } catch (e) {
-            Swal.fire("錯誤", "無法連上伺服器", "error");
+            Swal.fire("錯誤", "無法連線至伺服器", "error");
         }
     }
 
-    // 新增 VIP
+    async function loadVips() {
+        try {
+            const res = await fetch(`${API_URL}/api/vips?pwd=${currentPwd}`);
+            if (res.ok) {
+                const vips = await res.json();
+                renderVipList(vips);
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    function renderVipList(vips) {
+        const tbody = document.getElementById("vipList");
+        tbody.innerHTML = "";
+        
+        if(vips.length === 0) {
+            tbody.innerHTML = "<tr><td colspan='4' class='text-muted'>目前尚無名單，等待客人預約自動建檔中...</td></tr>";
+            return;
+        }
+
+        vips.forEach(vip => {
+            tbody.innerHTML += `
+                <tr>
+                    <td><b>${vip.user_name}</b></td>
+                    <td>${vip.user_phone}</td>
+                    <td><span class="badge-vip">👑 VIP</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteVip('${vip.user_phone}')">移除</button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
     async function addVip() {
         const name = document.getElementById("newName").value.trim();
         const phone = document.getElementById("newPhone").value.trim();
@@ -124,7 +149,7 @@
         }
 
         try {
-            const res = await fetch(`${API_URL}/api/vips?pwd=${BOSS_PWD}`, {
+            const res = await fetch(`${API_URL}/api/vips?pwd=${currentPwd}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ user_name: name, user_phone: phone })
@@ -134,7 +159,7 @@
                 Swal.fire("成功", "已加入 VIP 名單！", "success");
                 document.getElementById("newName").value = "";
                 document.getElementById("newPhone").value = "";
-                loadVips();
+                loadVips(); // 重新載入名單
             } else {
                 const data = await res.json();
                 Swal.fire("失敗", data.detail, "error");
@@ -144,18 +169,17 @@
         }
     }
 
-    // 刪除 VIP
     async function deleteVip(phone) {
         if (!confirm("確定要移除這位客人的 VIP 資格嗎？")) return;
         
         try {
-            const res = await fetch(`${API_URL}/api/vips/${phone}?pwd=${BOSS_PWD}`, {
+            const res = await fetch(`${API_URL}/api/vips/${phone}?pwd=${currentPwd}`, {
                 method: "DELETE"
             });
 
             if (res.ok) {
                 Swal.fire("已移除", "該客人已降為一般客人", "success");
-                loadVips();
+                loadVips(); // 重新載入名單
             } else {
                 Swal.fire("失敗", "移除失敗", "error");
             }
