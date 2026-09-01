@@ -163,6 +163,7 @@
                 Swal.fire("失敗", data.detail, "error");
             }
         } catch (e) {
+            console.error("新增 VIP 發生錯誤:", e);
             Swal.fire("錯誤", "無法連上伺服器", "error");
         }
     }
