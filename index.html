@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Lin Nail美甲工作室 - 預約系統</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#C2A3AC">
@@ -12,45 +12,26 @@
     
     <style>
         body { background-color: #F5EEF0; color: #5C4E54; font-family: 'Helvetica Neue', '微軟正黑體', Arial, sans-serif; padding: 20px 10px; }
-        .container-fluid { max-width: 1250px; }
+        .container-fluid { max-width: 1250px; padding: 0 10px; }
         .booking-card { background: #FFFFFF; border: none; border-radius: 20px; box-shadow: 0 8px 24px rgba(174, 139, 150, 0.15); padding: 25px; margin-bottom: 25px; }
         h2, h3 { color: #AE8B96; font-weight: bold; text-align: center; margin-bottom: 20px; }
-        .form-control, .form-select { border: 1px solid #E0D4D8; border-radius: 12px; padding: 12px; background-color: #FCFAFB; color: #5C4E54; }
+        .form-control, .form-select { border: 1px solid #E0D4D8; border-radius: 12px; padding: 12px; background-color: #FCFAFB; color: #5C4E54; font-size: 16px; /* 防止 iOS 縮放 */ }
         .form-control:focus, .form-select:focus { border-color: #C2A3AC; box-shadow: 0 0 0 0.25rem rgba(194, 163, 172, 0.25); }
         .form-label { font-weight: 600; color: #8A737A; margin-bottom: 8px; }
         .btn-primary { background-color: #C2A3AC; border: none; border-radius: 12px; padding: 14px 20px; font-weight: bold; font-size: 1.1rem; color: white; width: 100%; transition: all 0.3s ease; }
         .btn-primary:hover { background-color: #B08E98 !important; transform: translateY(-2px); box-shadow: 0 6px 15px rgba(176, 142, 152, 0.4); }
         .btn-outline-secondary { border-radius: 12px; border-color: #C2A3AC; color: #C2A3AC; font-weight: bold; }
         .btn-outline-secondary:hover { background-color: #C2A3AC; color: white; }
+        
         :root { --fc-border-color: #EEDEE2; --fc-button-bg-color: #C2A3AC; --fc-button-border-color: #C2A3AC; --fc-button-hover-bg-color: #B08E98; --fc-button-active-bg-color: #B08E98; --fc-today-bg-color: #FCFAFB; }
         
         #customerCalendar { background: white; padding: 15px; border-radius: 15px; min-height: 500px; font-size: 1em; }
         .fc-header-toolbar h2 { font-size: 1.3rem !important; color: #8A737A !important; margin: 0 !important; }
         
-        .fc-event {
-            white-space: normal !important; 
-            word-break: break-word !important; 
-            line-height: 1.2 !important;
-            margin-bottom: 2px !important;
-            border: none !important;
-        }
-        .fc-event-title {
-            font-size: 0.75rem;
-            text-align: center;
-            display: block;
-        }
-        
+        /* 電腦版行事曆格子 */
+        .fc-event { white-space: normal !important; word-break: break-word !important; line-height: 1.2 !important; margin-bottom: 2px !important; border: none !important; }
+        .fc-event-title { font-size: 0.75rem; text-align: center; display: block; }
         .fc-daygrid-day-frame { min-height: 80px !important; padding: 2px; }
-
-        @media (max-width: 768px) {
-            body { padding: 10px 5px; } 
-            .booking-card { padding: 12px; margin-bottom: 15px; } 
-            #customerCalendar { padding: 5px; min-height: 400px; font-size: 0.9em; }
-            .fc-daygrid-day-frame { min-height: 60px !important; }
-            .fc-header-toolbar h2 { font-size: 1.1rem !important; }
-            .fc-toolbar-chunk { display: flex; gap: 5px; align-items: center; }
-            .fc-timeGridWeek-button, .fc-dayGridMonth-button { display: none !important; }
-        }
 
         .calendar-hint { font-size: 0.85rem; margin-bottom: 10px; text-align: left; color: #8A737A; }
         .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
@@ -63,6 +44,30 @@
         .bank-info-box { background-color: #FCFAFB; border: 1px dashed #C2A3AC; border-radius: 12px; padding: 15px; font-size: 0.9rem; color: #5C4E54; margin-bottom: 15px; }
         .bank-info-title { font-weight: bold; color: #AE8B96; margin-bottom: 8px; font-size: 1rem;}
         .warning-text { color: #d9534f; font-weight: bold; font-size: 0.85rem; margin-top: 10px;}
+
+        /* ================= 專屬手機版 RWD 調整 ================= */
+        @media (max-width: 768px) {
+            body { padding: 10px 0; } 
+            .container-fluid { padding: 0 10px; }
+            .booking-card { padding: 15px 12px; margin-bottom: 15px; border-radius: 15px; } 
+            h2, h3 { font-size: 1.2rem; }
+            
+            /* 行事曆大瘦身 */
+            #customerCalendar { padding: 5px; min-height: auto; font-size: 0.8em; }
+            .fc-daygrid-day-frame { min-height: 50px !important; padding: 1px; }
+            .fc-header-toolbar h2 { font-size: 1rem !important; }
+            .fc-toolbar-chunk { display: flex; gap: 3px; align-items: center; }
+            .fc-button { padding: 0.2rem 0.4rem !important; font-size: 0.85rem !important; }
+            .fc-timeGridWeek-button, .fc-dayGridMonth-button { display: none !important; }
+            
+            /* 讓事件標題在手機上變小，避免超出格子 */
+            .fc-event-title { font-size: 0.65rem; line-height: 1.1; }
+            .fc-daygrid-event { padding: 1px !important; margin: 1px !important; }
+            
+            /* 調整按鈕與輸入框大小 */
+            .time-btn { padding: 8px 10px; font-size: 0.85rem; }
+            .btn-primary { padding: 12px 15px; font-size: 1rem; }
+        }
     </style>
 </head>
 <body>
@@ -302,14 +307,15 @@
                     document.getElementById("bookingDate").value = clickedDate;
                     fetchTimeSlots(clickedTime); 
                     
-                    document.getElementById("bookingForm").scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    // 為了手機版體驗：點擊行事曆後自動往下捲動到表單
+                    document.getElementById("bookingForm").scrollIntoView({ behavior: 'smooth', block: 'start' });
 
                     Swal.fire({
                         title: '已為您帶入時段！',
                         html: `幫您選好 <b>${clickedDate} ${clickedTime}</b> 囉！<br><br>請直接填寫基本資料即可送出。`,
                         icon: 'success',
                         confirmButtonColor: '#A3C2A3',
-                        timer: 3000,
+                        timer: 2000,
                         showConfirmButton: false 
                     });
                     
@@ -415,7 +421,7 @@
             });
             
             if(response.ok) {
-                Swal.fire({ title: '預約成功！', text: '記得於一週內匯款訂金喔 💅', icon: 'success', confirmButtonColor: '#C2A3AC' })
+                Swal.fire({ title: '預約成功！', text: '記得於三天內匯款訂金喔 💅', icon: 'success', confirmButtonColor: '#C2A3AC' })
                 .then(() => {
                     document.getElementById('bookingForm').reset();
                     document.getElementById('selectedTime').value = ""; 
