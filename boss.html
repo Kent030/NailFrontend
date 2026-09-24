@@ -3,12 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>老闆專屬 - VIP 管理後台</title>
+    <title>老闆專屬 - 營運管理後台</title>
+    <!-- ★ 增加了 JS 腳本，讓分頁可以順利切換 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         body { background-color: #F5EEF0; color: #5C4E54; font-family: '微軟正黑體', sans-serif; padding: 20px 10px; }
-        .container { max-width: 800px; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 8px 24px rgba(174, 139, 150, 0.15); }
+        .container { max-width: 900px; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 8px 24px rgba(174, 139, 150, 0.15); }
         h2 { color: #AE8B96; font-weight: bold; text-align: center; margin-bottom: 20px; }
         .btn-primary { background-color: #C2A3AC; border: none; }
         .btn-primary:hover { background-color: #B08E98; }
@@ -20,55 +22,101 @@
         
         #loginSection { max-width: 400px; margin: 100px auto; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 8px 24px rgba(174, 139, 150, 0.15); text-align: center;}
         #mainContent { display: none; }
+        
+        /* 分頁按鈕樣式 */
+        .nav-pills .nav-link { color: #8A737A; border-radius: 12px; margin-right: 10px; }
+        .nav-pills .nav-link.active { background-color: #C2A3AC; color: white; font-weight: bold;}
     </style>
 </head>
 <body>
 
 <div id="loginSection">
-    <h3 style="color: #AE8B96; font-weight: bold; margin-bottom: 20px;">🔒 老闆專屬後台</h3>
+    <h3 style="color: #AE8B96; font-weight: bold; margin-bottom: 20px;">🔒 營運管理後台</h3>
     <input type="password" id="bossPwd" class="form-control mb-3" placeholder="請輸入密碼">
     <button class="btn btn-primary w-100" onclick="login()">登入</button>
 </div>
 
 <div class="container" id="mainContent">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="mb-0">👑 VIP 熟客名單管理</h2>
-        <button class="btn btn-sync" onclick="syncVips()">✨ 自動同步日曆</button>
-    </div>
     
-    <div class="card mb-4" style="border-color: #E0D4D8;">
-        <div class="card-body">
-            <h5 class="card-title" style="color: #8A737A;">新增全新 VIP 客戶</h5>
-            <div class="row g-2">
-                <div class="col-md-5">
-                    <input type="text" id="newName" class="form-control" placeholder="客戶姓名 (必填)">
-                </div>
-                <div class="col-md-5">
-                    <!-- ★ 電話變成選填 -->
-                    <input type="tel" id="newPhone" class="form-control" placeholder="聯絡電話 (可空白，等客人自己補)">
-                </div>
-                <div class="col-md-2">
-                    <button class="btn btn-primary w-100" onclick="addVip()">新增</button>
+    <!-- ★ 分頁導覽列 -->
+    <ul class="nav nav-pills mb-4 justify-content-center" id="pills-tab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="pills-booking-tab" data-bs-toggle="pill" data-bs-target="#pills-booking" type="button" role="tab">📅 預約對帳管理</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="pills-vip-tab" data-bs-toggle="pill" data-bs-target="#pills-vip" type="button" role="tab">👑 VIP 熟客名單</button>
+        </li>
+    </ul>
+
+    <!-- ★ 分頁內容區 -->
+    <div class="tab-content" id="pills-tabContent">
+        
+        <!-- ================= 對帳管理 ================= -->
+        <div class="tab-pane fade show active" id="pills-booking" role="tabpanel">
+            <div class="alert alert-info" style="background-color: #FCFAFB; border-color: #E0D4D8; color: #8A737A; font-size: 0.95rem;">
+                💡 <b>系統自動守門員</b>：如果客人狀態為「⏳ 待匯款」且預約建立超過 72 小時，系統將自動取消該預約並釋放日曆。<br>
+                (客人在預約時有填寫數字末五碼，系統會自動歸類為「👀 待對帳」，<b>待對帳的預約不會被自動取消</b>，請老闆安心核對後手動改為已匯款！)
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table table-hover align-middle text-center">
+                    <thead>
+                        <tr>
+                            <th>預約時段</th>
+                            <th>客戶資料</th>
+                            <th>部位 / 末5碼</th>
+                            <th>狀態 / 倒數</th>
+                            <th>老闆操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminBookingList">
+                        <!-- 資料載入區 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ================= VIP 管理 ================= -->
+        <div class="tab-pane fade" id="pills-vip" role="tabpanel">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="mb-0" style="color: #AE8B96; font-weight: bold;">👑 VIP 名單</h4>
+                <button class="btn btn-sync btn-sm" onclick="syncVips()">✨ 自動同步日曆</button>
+            </div>
+            
+            <div class="card mb-4" style="border-color: #E0D4D8;">
+                <div class="card-body">
+                    <h6 class="card-title" style="color: #8A737A;">新增全新 VIP 客戶</h6>
+                    <div class="row g-2">
+                        <div class="col-md-5">
+                            <input type="text" id="newName" class="form-control form-control-sm" placeholder="客戶姓名 (必填)">
+                        </div>
+                        <div class="col-md-5">
+                            <input type="tel" id="newPhone" class="form-control form-control-sm" placeholder="聯絡電話 (可空白)">
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-primary btn-sm w-100" onclick="addVip()">新增</button>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <small class="text-muted mt-2 d-block">💡 電話可以不填！只要名字對上，客人下次預約時系統會自動幫他把電話補進資料庫！</small>
-        </div>
-    </div>
 
-    <div class="table-responsive">
-        <table class="table table-hover align-middle text-center">
-            <thead>
-                <tr>
-                    <th>姓名</th>
-                    <th>聯絡電話</th>
-                    <th>狀態</th>
-                    <th>操作</th>
-                </tr>
-            </thead>
-            <tbody id="vipList">
-                <!-- 資料會載入在這裡 -->
-            </tbody>
-        </table>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle text-center">
+                    <thead>
+                        <tr>
+                            <th>姓名</th>
+                            <th>聯絡電話</th>
+                            <th>狀態</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="vipList">
+                        <!-- 資料載入區 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
     </div>
 </div>
 
@@ -85,13 +133,16 @@
         if (!pwd) return;
 
         try {
-            const res = await fetch(`${API_URL}/api/vips?pwd=${pwd}`);
+            // 用載入預約當作測試連線
+            const res = await fetch(`${API_URL}/api/admin/bookings?pwd=${pwd}`);
             if (res.ok) {
                 currentPwd = pwd;
                 document.getElementById("loginSection").style.display = "none";
                 document.getElementById("mainContent").style.display = "block";
-                const vips = await res.json();
-                renderVipList(vips);
+                
+                const bookings = await res.json();
+                renderAdminBookings(bookings);
+                loadVips(); // 順便把 VIP 也載好
             } else {
                 Swal.fire("錯誤", "密碼錯誤！", "error");
             }
@@ -100,37 +151,101 @@
         }
     }
 
+    // ================= 預約對帳功能 =================
+    async function loadAdminBookings() {
+        try {
+            const res = await fetch(`${API_URL}/api/admin/bookings?pwd=${currentPwd}`);
+            if (res.ok) {
+                const bookings = await res.json();
+                renderAdminBookings(bookings);
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    function renderAdminBookings(bookings) {
+        const tbody = document.getElementById("adminBookingList");
+        tbody.innerHTML = "";
+        if(bookings.length === 0) {
+            tbody.innerHTML = "<tr><td colspan='5' class='text-muted'>目前沒有未來的預約紀錄。</td></tr>";
+            return;
+        }
+        
+        bookings.forEach(b => {
+            let statusBadge = "";
+            let expireHint = "";
+            
+            if (b.payment_status === "已匯款") {
+                statusBadge = `<span class="badge" style="background-color: #A3C2A3;">✅ 已匯款</span>`;
+            } else if (b.payment_status === "待對帳") {
+                statusBadge = `<span class="badge bg-warning text-dark">👀 待對帳</span>`;
+            } else {
+                statusBadge = `<span class="badge bg-danger">⏳ 待匯款</span>`;
+                
+                // 計算取消倒數 (72小時)
+                const createdDate = new Date(b.created_at);
+                const expireDate = new Date(createdDate.getTime() + 72 * 60 * 60 * 1000);
+                const now = new Date();
+                const diffHours = Math.floor((expireDate - now) / (1000 * 60 * 60));
+                
+                if (diffHours > 0) {
+                    expireHint = `<br><small class="text-danger fw-bold">剩餘 ${diffHours} 小時取消</small>`;
+                } else {
+                    expireHint = `<br><small class="text-danger fw-bold">即將由系統刪除</small>`;
+                }
+            }
+
+            tbody.innerHTML += `
+                <tr>
+                    <td style="white-space: nowrap;"><b>${b.start_time_display}</b><br><small class="text-muted">建單: ${b.created_at_display}</small></td>
+                    <td style="white-space: nowrap;">${b.user_name}<br><small class="text-muted">${b.user_phone}</small></td>
+                    <td>${b.service_type}<br><span class="text-primary fw-bold">${b.remittance_last_5}</span></td>
+                    <td style="white-space: nowrap;">${statusBadge}${expireHint}</td>
+                    <td style="min-width: 130px;">
+                        <select class="form-select form-select-sm d-inline-block w-auto" onchange="changeBookingStatus(${b.id}, this.value)">
+                            <option value="" disabled selected>切換狀態</option>
+                            <option value="已匯款">✅ 確認已匯款</option>
+                            <option value="待對帳">👀 設為待對帳</option>
+                            <option value="待匯款">⏳ 設為待匯款</option>
+                        </select>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    async function changeBookingStatus(id, newStatus) {
+        try {
+            const res = await fetch(`${API_URL}/api/admin/bookings/${id}/status?status=${newStatus}&pwd=${currentPwd}`, { method: "PUT" });
+            if (res.ok) {
+                Swal.fire({title: "狀態已更新", icon: "success", toast: true, position: "top-end", timer: 2000, showConfirmButton: false});
+                loadAdminBookings(); // 重新整理列表
+            }
+        } catch (e) { Swal.fire("錯誤", "更新失敗", "error"); }
+    }
+
+
+    // ================= VIP 管理功能 (不變) =================
     async function loadVips() {
         try {
             const res = await fetch(`${API_URL}/api/vips?pwd=${currentPwd}`);
-            if (res.ok) {
-                const vips = await res.json();
-                renderVipList(vips);
-            }
-        } catch (e) {
-            console.error(e);
-        }
+            if (res.ok) renderVipList(await res.json());
+        } catch (e) { console.error(e); }
     }
 
     function renderVipList(vips) {
         const tbody = document.getElementById("vipList");
         tbody.innerHTML = "";
-        
         if(vips.length === 0) {
-            tbody.innerHTML = "<tr><td colspan='4' class='text-muted'>目前尚無名單，可點擊上方「自動同步日曆」載入舊客。</td></tr>";
+            tbody.innerHTML = "<tr><td colspan='4' class='text-muted'>目前尚無名單，可點擊上方「自動同步」載入舊客。</td></tr>";
             return;
         }
-
         vips.forEach(vip => {
             tbody.innerHTML += `
                 <tr>
                     <td><b>${vip.user_name}</b></td>
                     <td style="color: ${vip.user_phone === '尚未提供電話' ? '#d9534f' : '#5C4E54'}">${vip.user_phone}</td>
                     <td><span class="badge-vip">👑 VIP</span></td>
-                    <td>
-                        <!-- ★ 統一用乾淨名字刪除 -->
-                        <button class="btn btn-sm btn-outline-danger" onclick="deleteVip('${vip.user_name}')">移除</button>
-                    </td>
+                    <td><button class="btn btn-sm btn-outline-danger" onclick="deleteVip('${vip.user_name}')">移除</button></td>
                 </tr>
             `;
         });
@@ -139,77 +254,37 @@
     async function addVip() {
         const name = document.getElementById("newName").value.trim();
         const phone = document.getElementById("newPhone").value.trim();
-        
-        if (!name) {
-            Swal.fire("提示", "一定要填寫客人姓名喔！", "warning");
-            return;
-        }
-
+        if (!name) { Swal.fire("提示", "一定要填寫客人姓名喔！", "warning"); return; }
         try {
             const res = await fetch(`${API_URL}/api/vips?pwd=${currentPwd}`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ user_name: name, user_phone: phone || null }) // ★ 沒有的話傳 null
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ user_name: name, user_phone: phone || null })
             });
-
             if (res.ok) {
-                const data = await res.json();
-                Swal.fire("成功", data.message, "success");
+                Swal.fire("成功", (await res.json()).message, "success");
                 document.getElementById("newName").value = "";
                 document.getElementById("newPhone").value = "";
                 loadVips(); 
-            } else {
-                const data = await res.json();
-                Swal.fire("失敗", data.detail, "error");
-            }
-        } catch (e) {
-            console.error("新增 VIP 發生錯誤:", e);
-            Swal.fire("錯誤", "無法連上伺服器", "error");
-        }
+            } else Swal.fire("失敗", (await res.json()).detail, "error");
+        } catch (e) { Swal.fire("錯誤", "無法連上伺服器", "error"); }
     }
 
     async function deleteVip(name) {
         if (!confirm(`確定要移除 ${name} 的 VIP 資格嗎？`)) return;
-        
         try {
-            // ★ 用名字刪除
-            const encodedName = encodeURIComponent(name);
-            const res = await fetch(`${API_URL}/api/vips/${encodedName}?pwd=${currentPwd}`, {
-                method: "DELETE"
-            });
-
-            if (res.ok) {
-                Swal.fire("已移除", "該客人已降為一般客人", "success");
-                loadVips();
-            } else {
-                Swal.fire("失敗", "移除失敗", "error");
-            }
-        } catch (e) {
-            Swal.fire("錯誤", "無法連上伺服器", "error");
-        }
+            const res = await fetch(`${API_URL}/api/vips/${encodeURIComponent(name)}?pwd=${currentPwd}`, { method: "DELETE" });
+            if (res.ok) { Swal.fire("已移除", "該客人已降為一般客人", "success"); loadVips(); }
+            else Swal.fire("失敗", "移除失敗", "error");
+        } catch (e) { Swal.fire("錯誤", "無法連上伺服器", "error"); }
     }
 
     async function syncVips() {
-        Swal.fire({
-            title: '正在掃描 Google 日曆...',
-            text: '這可能需要幾十秒鐘，請耐心等候',
-            allowOutsideClick: false,
-            didOpen: () => { Swal.showLoading(); }
-        });
-
+        Swal.fire({ title: '正在掃描...', text: '這可能需要幾十秒，請耐心等候', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         try {
             const res = await fetch(`${API_URL}/api/sync-vips?pwd=${currentPwd}`, { method: "POST" });
-            const data = await res.json();
-            
-            if (res.ok) {
-                Swal.fire("同步完成！", data.message, "success");
-                loadVips(); 
-            } else {
-                Swal.fire("同步失敗", data.detail, "error");
-            }
-        } catch (e) {
-            Swal.fire("錯誤", "無法連線至伺服器", "error");
-        }
+            if (res.ok) { Swal.fire("同步完成！", (await res.json()).message, "success"); loadVips(); }
+            else Swal.fire("同步失敗", (await res.json()).detail, "error");
+        } catch (e) { Swal.fire("錯誤", "無法連線至伺服器", "error"); }
     }
 </script>
 </body>
