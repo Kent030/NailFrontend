@@ -16,45 +16,29 @@
         .btn-sync { background-color: #8A737A; color: white; font-weight: bold; }
         .btn-sync:hover { background-color: #5C4E54; color: white; }
         
-        table { margin-top: 20px; width: 100%; }
+        table { margin-top: 20px; width: 100%; font-size: 0.95rem; }
         th { background-color: #FCFAFB !important; color: #AE8B96 !important; }
         .badge-vip { background-color: #A3C2A3; color: white; padding: 5px 10px; border-radius: 12px; font-size: 0.85rem;}
         
         #loginSection { max-width: 400px; margin: 100px auto; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 8px 24px rgba(174, 139, 150, 0.15); text-align: center;}
         #mainContent { display: none; }
         
-        .nav-pills .nav-link { color: #8A737A; border-radius: 12px; margin-right: 10px; margin-bottom: 5px; }
+        .nav-pills { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 10px; }
+        .nav-pills .nav-link { color: #8A737A; border-radius: 12px; margin-right: 10px; margin-bottom: 5px; white-space: nowrap; }
         .nav-pills .nav-link.active { background-color: #C2A3AC; color: white; font-weight: bold;}
 
-        /* ================= 專屬手機版 RWD 調整 (老闆卡片式表格) ================= */
+        /* RWD 卡片式排版 */
         @media (max-width: 768px) {
             .container { padding: 15px; }
             h2 { font-size: 1.3rem; }
-            .nav-pills { flex-direction: column; }
-            .nav-pills .nav-link { margin-right: 0; text-align: center; }
             
-            /* 讓 Table 變成卡片清單 (Responsive Table to Cards) */
-            .table-responsive table, .table-responsive thead, .table-responsive tbody, .table-responsive th, .table-responsive td, .table-responsive tr { 
-                display: block; 
-            }
-            /* 隱藏原本的表頭 */
-            .table-responsive thead tr { 
-                position: absolute; top: -9999px; left: -9999px; 
-            }
-            .table-responsive tr { 
-                border: 1px solid #E0D4D8; border-radius: 10px; margin-bottom: 15px; background-color: white; padding: 10px;
-                box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            }
-            .table-responsive td { 
-                border: none; border-bottom: 1px solid #F5EEF0; position: relative; padding-left: 45%; text-align: left !important; min-height: 40px; display: flex; align-items: center;
-            }
+            .table-responsive table, .table-responsive thead, .table-responsive tbody, .table-responsive th, .table-responsive td, .table-responsive tr { display: block; }
+            .table-responsive thead tr { position: absolute; top: -9999px; left: -9999px; }
+            .table-responsive tr { border: 1px solid #E0D4D8; border-radius: 10px; margin-bottom: 15px; background-color: white; padding: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+            .table-responsive td { border: none; border-bottom: 1px solid #F5EEF0; position: relative; padding-left: 45%; text-align: left !important; min-height: 40px; display: flex; align-items: center; word-break: break-all; }
             .table-responsive td:last-child { border-bottom: 0; }
-            /* 利用 data-label 屬性偽造表頭 */
-            .table-responsive td:before { 
-                position: absolute; top: 50%; left: 10px; transform: translateY(-50%); width: 40%; white-space: nowrap; font-weight: bold; color: #8A737A; font-size: 0.9rem;
-            }
+            .table-responsive td:before { position: absolute; top: 50%; left: 10px; transform: translateY(-50%); width: 40%; white-space: nowrap; font-weight: bold; color: #8A737A; font-size: 0.9rem; }
             
-            /* 分別針對不同表格設定假表頭名稱 */
             #adminBookingList td:nth-of-type(1):before { content: "預約時段"; }
             #adminBookingList td:nth-of-type(2):before { content: "客戶資料"; }
             #adminBookingList td:nth-of-type(3):before { content: "部位/末5碼"; }
@@ -66,7 +50,16 @@
             #vipList td:nth-of-type(3):before { content: "狀態"; }
             #vipList td:nth-of-type(4):before { content: "操作"; }
 
-            /* 優化手機上的選單與按鈕 */
+            #logList td:nth-of-type(1):before { content: "動作時間"; }
+            #logList td:nth-of-type(2):before { content: "事件類型"; }
+            #logList td:nth-of-type(3):before { content: "客戶資料"; }
+            #logList td:nth-of-type(4):before { content: "目標時段/詳情"; }
+
+            #blacklistList td:nth-of-type(1):before { content: "姓名"; }
+            #blacklistList td:nth-of-type(2):before { content: "聯絡電話"; }
+            #blacklistList td:nth-of-type(3):before { content: "加入原因"; }
+            #blacklistList td:nth-of-type(4):before { content: "操作"; }
+
             .form-select-sm { font-size: 1rem; padding: 8px 10px; width: 100% !important; margin-top: 5px; }
             .btn-sm { font-size: 0.95rem; padding: 8px 15px; }
         }
@@ -82,12 +75,18 @@
 
 <div class="container" id="mainContent">
     
-    <ul class="nav nav-pills mb-4 justify-content-center" id="pills-tab" role="tablist">
+    <ul class="nav nav-pills mb-4 justify-content-start justify-content-md-center" id="pills-tab" role="tablist">
         <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="pills-booking-tab" data-bs-toggle="pill" data-bs-target="#pills-booking" type="button" role="tab">📅 預約對帳管理</button>
+            <button class="nav-link active" id="pills-booking-tab" data-bs-toggle="pill" data-bs-target="#pills-booking" type="button" role="tab" onclick="loadAdminBookings()">📅 對帳管理</button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link" id="pills-vip-tab" data-bs-toggle="pill" data-bs-target="#pills-vip" type="button" role="tab">👑 VIP 熟客名單</button>
+            <button class="nav-link" id="pills-log-tab" data-bs-toggle="pill" data-bs-target="#pills-log" type="button" role="tab" onclick="loadLogs()">📝 操作日誌</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="pills-vip-tab" data-bs-toggle="pill" data-bs-target="#pills-vip" type="button" role="tab" onclick="loadVips()">👑 VIP 名單</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="pills-blacklist-tab" data-bs-toggle="pill" data-bs-target="#pills-blacklist" type="button" role="tab" onclick="loadBlacklist()">🚫 黑名單</button>
         </li>
     </ul>
 
@@ -96,24 +95,25 @@
         <!-- ================= 對帳管理 ================= -->
         <div class="tab-pane fade show active" id="pills-booking" role="tabpanel">
             <div class="alert alert-info" style="background-color: #FCFAFB; border-color: #E0D4D8; color: #8A737A; font-size: 0.9rem;">
-                💡 <b>自動守門員</b>：狀態為「⏳ 待匯款」且建立超過 72 小時的單，系統會自動取消。<br>
-                (客人在預約時有填寫數字末五碼會自動設為「👀 待對帳」，不會被取消。)
+                💡 <b>自動守門員</b>：狀態為「⏳ 待匯款」且建立超過 72 小時的單，系統會自動取消。客人在預約時有填寫數字末五碼會自動設為「👀 待對帳」。
             </div>
-            
             <div class="table-responsive">
                 <table class="table table-hover align-middle text-center m-0">
-                    <thead>
-                        <tr>
-                            <th>預約時段</th>
-                            <th>客戶資料</th>
-                            <th>部位 / 末5碼</th>
-                            <th>狀態 / 倒數</th>
-                            <th>老闆操作</th>
-                        </tr>
-                    </thead>
-                    <tbody id="adminBookingList">
-                        <!-- 資料載入區 -->
-                    </tbody>
+                    <thead><tr><th>預約時段</th><th>客戶資料</th><th>部位 / 末5碼</th><th>狀態 / 倒數</th><th>操作</th></tr></thead>
+                    <tbody id="adminBookingList"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ================= 操作日誌 ================= -->
+        <div class="tab-pane fade" id="pills-log" role="tabpanel">
+            <div class="alert alert-secondary" style="font-size: 0.9rem;">
+                👀 這裡會記錄客人「成功預約」、「手動取消」以及「系統因逾期取消」的紀錄，方便核對訂金退款。
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle text-center m-0">
+                    <thead><tr><th>動作時間</th><th>事件類型</th><th>客戶資料</th><th>目標時段/詳情</th></tr></thead>
+                    <tbody id="logList"></tbody>
                 </table>
             </div>
         </div>
@@ -121,44 +121,51 @@
         <!-- ================= VIP 管理 ================= -->
         <div class="tab-pane fade" id="pills-vip" role="tabpanel">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h4 class="mb-0" style="color: #AE8B96; font-weight: bold;">👑 VIP 名單</h4>
+                <h5 class="mb-0" style="color: #AE8B96; font-weight: bold;">👑 VIP 名單</h5>
                 <button class="btn btn-sync btn-sm" onclick="syncVips()">✨ 自動同步</button>
             </div>
-            
             <div class="card mb-4" style="border-color: #E0D4D8;">
                 <div class="card-body p-3">
                     <h6 class="card-title mb-2" style="color: #8A737A;">新增 VIP</h6>
                     <div class="row g-2">
-                        <div class="col-md-5 col-12">
-                            <input type="text" id="newName" class="form-control" placeholder="姓名 (必填)">
-                        </div>
-                        <div class="col-md-5 col-12">
-                            <input type="tel" id="newPhone" class="form-control" placeholder="電話 (可空白)">
-                        </div>
-                        <div class="col-md-2 col-12">
-                            <button class="btn btn-primary w-100" onclick="addVip()">新增</button>
-                        </div>
+                        <div class="col-md-5 col-12"><input type="text" id="newName" class="form-control" placeholder="姓名 (必填)"></div>
+                        <div class="col-md-5 col-12"><input type="tel" id="newPhone" class="form-control" placeholder="電話 (可空白)"></div>
+                        <div class="col-md-2 col-12"><button class="btn btn-primary w-100" onclick="addVip()">新增</button></div>
                     </div>
                 </div>
             </div>
-
             <div class="table-responsive">
                 <table class="table table-hover align-middle text-center m-0">
-                    <thead>
-                        <tr>
-                            <th>姓名</th>
-                            <th>聯絡電話</th>
-                            <th>狀態</th>
-                            <th>操作</th>
-                        </tr>
-                    </thead>
-                    <tbody id="vipList">
-                        <!-- 資料載入區 -->
-                    </tbody>
+                    <thead><tr><th>姓名</th><th>聯絡電話</th><th>狀態</th><th>操作</th></tr></thead>
+                    <tbody id="vipList"></tbody>
                 </table>
             </div>
         </div>
-        
+
+        <!-- ================= 黑名單管理 ================= -->
+        <div class="tab-pane fade" id="pills-blacklist" role="tabpanel">
+            <div class="alert alert-danger" style="font-size: 0.9rem;">
+                🚫 加入黑名單的客人，未來在預約網站送出資料時，系統會直接拒絕受理。
+            </div>
+            <div class="card mb-4" style="border-color: #d9534f;">
+                <div class="card-body p-3">
+                    <h6 class="card-title mb-2 text-danger">封鎖新客人</h6>
+                    <div class="row g-2">
+                        <div class="col-md-3 col-12"><input type="text" id="blName" class="form-control" placeholder="姓名 (可選)"></div>
+                        <div class="col-md-4 col-12"><input type="tel" id="blPhone" class="form-control" placeholder="聯絡電話 (必填)"></div>
+                        <div class="col-md-3 col-12"><input type="text" id="blReason" class="form-control" placeholder="封鎖原因 (例:多次爽約)"></div>
+                        <div class="col-md-2 col-12"><button class="btn btn-danger w-100" onclick="addBlacklist()">封鎖</button></div>
+                    </div>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle text-center m-0">
+                    <thead><tr><th>姓名</th><th>聯絡電話</th><th>加入原因</th><th>操作</th></tr></thead>
+                    <tbody id="blacklistList"></tbody>
+                </table>
+            </div>
+        </div>
+
     </div>
 </div>
 
@@ -173,66 +180,39 @@
     async function login() {
         const pwd = document.getElementById("bossPwd").value;
         if (!pwd) return;
-
         try {
             const res = await fetch(`${API_URL}/api/admin/bookings?pwd=${pwd}`);
             if (res.ok) {
                 currentPwd = pwd;
                 document.getElementById("loginSection").style.display = "none";
                 document.getElementById("mainContent").style.display = "block";
-                
-                const bookings = await res.json();
-                renderAdminBookings(bookings);
-                loadVips(); 
-            } else {
-                Swal.fire("錯誤", "密碼錯誤！", "error");
-            }
-        } catch (e) {
-            Swal.fire("錯誤", "無法連線至伺服器", "error");
-        }
+                renderAdminBookings(await res.json());
+            } else Swal.fire("錯誤", "密碼錯誤！", "error");
+        } catch (e) { Swal.fire("錯誤", "無法連線至伺服器", "error"); }
     }
 
-    // ================= 預約對帳功能 =================
+    // --- 對帳管理 ---
     async function loadAdminBookings() {
         try {
             const res = await fetch(`${API_URL}/api/admin/bookings?pwd=${currentPwd}`);
-            if (res.ok) {
-                const bookings = await res.json();
-                renderAdminBookings(bookings);
-            }
+            if (res.ok) renderAdminBookings(await res.json());
         } catch (e) { console.error(e); }
     }
 
     function renderAdminBookings(bookings) {
         const tbody = document.getElementById("adminBookingList");
         tbody.innerHTML = "";
-        if(bookings.length === 0) {
-            tbody.innerHTML = "<tr><td colspan='5' class='text-muted text-center py-4'>目前沒有未來的預約紀錄。</td></tr>";
-            return;
-        }
+        if(bookings.length === 0) { tbody.innerHTML = "<tr><td colspan='5' class='text-muted text-center py-4'>目前沒有未來的預約紀錄。</td></tr>"; return; }
         
         bookings.forEach(b => {
-            let statusBadge = "";
-            let expireHint = "";
-            
-            if (b.payment_status === "已匯款") {
-                statusBadge = `<span class="badge" style="background-color: #A3C2A3;">✅ 已匯款</span>`;
-            } else if (b.payment_status === "待對帳") {
-                statusBadge = `<span class="badge bg-warning text-dark">👀 待對帳</span>`;
-            } else {
+            let statusBadge = ""; let expireHint = "";
+            if (b.payment_status === "已匯款") statusBadge = `<span class="badge bg-success">✅ 已匯款</span>`;
+            else if (b.payment_status === "待對帳") statusBadge = `<span class="badge bg-warning text-dark">👀 待對帳</span>`;
+            else {
                 statusBadge = `<span class="badge bg-danger">⏳ 待匯款</span>`;
-                const createdDate = new Date(b.created_at);
-                const expireDate = new Date(createdDate.getTime() + 72 * 60 * 60 * 1000);
-                const now = new Date();
-                const diffHours = Math.floor((expireDate - now) / (1000 * 60 * 60));
-                
-                if (diffHours > 0) {
-                    expireHint = `<br><small class="text-danger fw-bold">剩餘 ${diffHours} 小時</small>`;
-                } else {
-                    expireHint = `<br><small class="text-danger fw-bold">即將刪除</small>`;
-                }
+                const diffHours = Math.floor((new Date(new Date(b.created_at).getTime() + 72 * 60 * 60 * 1000) - new Date()) / (1000 * 60 * 60));
+                expireHint = diffHours > 0 ? `<br><small class="text-danger fw-bold">剩餘 ${diffHours} 小時</small>` : `<br><small class="text-danger fw-bold">即將刪除</small>`;
             }
-
             tbody.innerHTML += `
                 <tr>
                     <td><b>${b.start_time_display}</b><br><small class="text-muted d-none d-md-block">建單: ${b.created_at_display}</small></td>
@@ -255,76 +235,138 @@
     async function changeBookingStatus(id, newStatus) {
         try {
             const res = await fetch(`${API_URL}/api/admin/bookings/${id}/status?status=${newStatus}&pwd=${currentPwd}`, { method: "PUT" });
-            if (res.ok) {
-                Swal.fire({title: "狀態已更新", icon: "success", toast: true, position: "top-end", timer: 2000, showConfirmButton: false});
-                loadAdminBookings(); 
-            }
+            if (res.ok) { Swal.fire({title: "更新成功", icon: "success", toast: true, position: "top-end", timer: 1500, showConfirmButton: false}); loadAdminBookings(); }
         } catch (e) { Swal.fire("錯誤", "更新失敗", "error"); }
     }
 
-
-    // ================= VIP 管理功能 =================
-    async function loadVips() {
+    // --- 日誌管理 ---
+    async function loadLogs() {
         try {
-            const res = await fetch(`${API_URL}/api/vips?pwd=${currentPwd}`);
-            if (res.ok) renderVipList(await res.json());
+            const res = await fetch(`${API_URL}/api/admin/logs?pwd=${currentPwd}`);
+            if (res.ok) {
+                const logs = await res.json();
+                const tbody = document.getElementById("logList");
+                tbody.innerHTML = "";
+                if(logs.length === 0) { tbody.innerHTML = "<tr><td colspan='4' class='text-muted text-center py-4'>目前無紀錄</td></tr>"; return; }
+                logs.forEach(l => {
+                    let badgeClass = l.action_type === "預約" ? "bg-primary" : (l.action_type === "取消" ? "bg-warning text-dark" : "bg-danger");
+                    tbody.innerHTML += `
+                        <tr>
+                            <td class="text-muted"><small>${l.action_time}</small></td>
+                            <td><span class="badge ${badgeClass}">${l.action_type}</span></td>
+                            <td><b>${l.user_name}</b><br><small>${l.user_phone}</small></td>
+                            <td><b class="text-primary">${l.target_time}</b><br><small class="text-muted">${l.details || ''}</small></td>
+                        </tr>
+                    `;
+                });
+            }
         } catch (e) { console.error(e); }
     }
 
-    function renderVipList(vips) {
-        const tbody = document.getElementById("vipList");
-        tbody.innerHTML = "";
-        if(vips.length === 0) {
-            tbody.innerHTML = "<tr><td colspan='4' class='text-muted text-center py-4'>目前尚無名單。</td></tr>";
-            return;
-        }
-        vips.forEach(vip => {
-            tbody.innerHTML += `
-                <tr>
-                    <td><b>${vip.user_name}</b></td>
-                    <td style="color: ${vip.user_phone === '尚未提供電話' ? '#d9534f' : '#5C4E54'}">${vip.user_phone}</td>
-                    <td><span class="badge-vip">👑 VIP</span></td>
-                    <td><button class="btn btn-sm btn-outline-danger" onclick="deleteVip('${vip.user_name}')">移除</button></td>
-                </tr>
-            `;
-        });
+    // --- VIP 管理 ---
+    async function loadVips() {
+        try {
+            const res = await fetch(`${API_URL}/api/vips?pwd=${currentPwd}`);
+            if (res.ok) {
+                const vips = await res.json();
+                const tbody = document.getElementById("vipList");
+                tbody.innerHTML = "";
+                if(vips.length === 0) { tbody.innerHTML = "<tr><td colspan='4' class='text-muted text-center py-4'>目前無名單</td></tr>"; return; }
+                vips.forEach(vip => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td><b>${vip.user_name}</b></td>
+                            <td style="color: ${vip.user_phone === '尚未提供電話' ? '#d9534f' : '#5C4E54'}">${vip.user_phone}</td>
+                            <td><span class="badge bg-success">👑 VIP</span></td>
+                            <td><button class="btn btn-sm btn-outline-danger" onclick="deleteVip('${vip.user_name}')">移除</button></td>
+                        </tr>
+                    `;
+                });
+            }
+        } catch (e) { console.error(e); }
     }
 
     async function addVip() {
         const name = document.getElementById("newName").value.trim();
         const phone = document.getElementById("newPhone").value.trim();
-        if (!name) { Swal.fire("提示", "一定要填寫姓名喔！", "warning"); return; }
+        if (!name) { Swal.fire("提示", "請填寫姓名", "warning"); return; }
         try {
             const res = await fetch(`${API_URL}/api/vips?pwd=${currentPwd}`, {
                 method: "POST", headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ user_name: name, user_phone: phone || null })
             });
-            if (res.ok) {
-                Swal.fire("成功", (await res.json()).message, "success");
-                document.getElementById("newName").value = "";
-                document.getElementById("newPhone").value = "";
-                loadVips(); 
-            } else Swal.fire("失敗", (await res.json()).detail, "error");
-        } catch (e) { Swal.fire("錯誤", "無法連上伺服器", "error"); }
+            if (res.ok) { Swal.fire("成功", "新增VIP", "success"); loadVips(); } 
+            else Swal.fire("失敗", (await res.json()).detail, "error");
+        } catch (e) {}
     }
 
     async function deleteVip(name) {
         if (!confirm(`確定移除 ${name} 嗎？`)) return;
         try {
             const res = await fetch(`${API_URL}/api/vips/${encodeURIComponent(name)}?pwd=${currentPwd}`, { method: "DELETE" });
-            if (res.ok) { Swal.fire("已移除", "成功", "success"); loadVips(); }
-            else Swal.fire("失敗", "移除失敗", "error");
-        } catch (e) { Swal.fire("錯誤", "無法連上伺服器", "error"); }
+            if (res.ok) loadVips();
+        } catch (e) {}
     }
 
     async function syncVips() {
-        Swal.fire({ title: '掃描中...', text: '請稍候', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        Swal.fire({ title: '掃描中...', didOpen: () => Swal.showLoading() });
         try {
             const res = await fetch(`${API_URL}/api/sync-vips?pwd=${currentPwd}`, { method: "POST" });
-            if (res.ok) { Swal.fire("完成！", (await res.json()).message, "success"); loadVips(); }
-            else Swal.fire("失敗", (await res.json()).detail, "error");
-        } catch (e) { Swal.fire("錯誤", "無法連線", "error"); }
+            if (res.ok) { Swal.fire("完成", "", "success"); loadVips(); }
+        } catch (e) {}
     }
+
+    // --- 黑名單管理 ---
+    async function loadBlacklist() {
+        try {
+            const res = await fetch(`${API_URL}/api/admin/blacklist?pwd=${currentPwd}`);
+            if (res.ok) {
+                const bl = await res.json();
+                const tbody = document.getElementById("blacklistList");
+                tbody.innerHTML = "";
+                if(bl.length === 0) { tbody.innerHTML = "<tr><td colspan='4' class='text-muted text-center py-4'>目前無黑名單</td></tr>"; return; }
+                bl.forEach(b => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td><b>${b.user_name || '未提供'}</b></td>
+                            <td class="text-danger fw-bold">${b.user_phone}</td>
+                            <td><small class="text-muted">${b.reason || '無'}</small></td>
+                            <td><button class="btn btn-sm btn-outline-secondary" onclick="removeBlacklist('${b.user_phone}')">解除封鎖</button></td>
+                        </tr>
+                    `;
+                });
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    async function addBlacklist() {
+        const name = document.getElementById("blName").value.trim();
+        const phone = document.getElementById("blPhone").value.trim();
+        const reason = document.getElementById("blReason").value.trim();
+        if (!phone) { Swal.fire("提示", "必須填寫電話號碼！", "warning"); return; }
+        try {
+            const res = await fetch(`${API_URL}/api/admin/blacklist?pwd=${currentPwd}`, {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ user_phone: phone, user_name: name || null, reason: reason || null })
+            });
+            if (res.ok) {
+                Swal.fire("成功", "已加入黑名單", "success");
+                document.getElementById("blName").value = "";
+                document.getElementById("blPhone").value = "";
+                document.getElementById("blReason").value = "";
+                loadBlacklist(); 
+            } else Swal.fire("失敗", (await res.json()).detail, "error");
+        } catch (e) { Swal.fire("錯誤", "無法連上伺服器", "error"); }
+    }
+
+    async function removeBlacklist(phone) {
+        if (!confirm(`確定要解除封鎖 ${phone} 嗎？`)) return;
+        try {
+            const res = await fetch(`${API_URL}/api/admin/blacklist/${phone}?pwd=${currentPwd}`, { method: "DELETE" });
+            if (res.ok) { Swal.fire("已解除", "", "success"); loadBlacklist(); }
+        } catch (e) {}
+    }
+
 </script>
 </body>
 </html>
